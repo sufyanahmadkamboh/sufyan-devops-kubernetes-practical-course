@@ -80,6 +80,7 @@ capstone/database/statefulset.yaml
 capstone/frontend/configmap.yaml
 capstone/frontend/deployment.yaml
 capstone/frontend/service.yaml
+capstone/helm/values-capstone.yaml
 capstone/ingress/ingress.yaml
 capstone/jobs/backup-cronjob.yaml
 capstone/namespace.yaml
@@ -137,7 +138,24 @@ kubectl get pods,svc,ingress,pvc -n learning-app
 ```
 
 ```text
-(recorded by the test run)
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/backend-57bb86cc6c-5v5hq    1/1     Running   0          15s
+pod/backend-57bb86cc6c-hlwgn    1/1     Running   0          15s
+pod/db-0                        1/1     Running   0          15s
+pod/frontend-6db66d9ff5-6l22k   1/1     Running   0          14s
+pod/frontend-6db66d9ff5-mwc7j   1/1     Running   0          14s
+
+NAME               TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/backend    ClusterIP   10.101.158.214   <none>        8080/TCP   15s
+service/db         ClusterIP   None             <none>        5432/TCP   15s
+service/frontend   ClusterIP   10.97.202.213    <none>        80/TCP     15s
+
+NAME                                     CLASS   HOSTS                ADDRESS   PORTS   AGE
+ingress.networking.k8s.io/learning-app   nginx   learning-app.local             80      14s
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-db-0    Bound    pvc-deb635b8-21e4-47b6-b5a9-c73cce27b236   1Gi        RWO            standard       <unset>                 15s
+persistentvolumeclaim/db-backups   Bound    pvc-969c7af0-df59-45f7-b310-c991e3ffbacf   1Gi        RWO            standard       <unset>                 15s
 ```
 
 Five Pods `Running` and `1/1` (two frontend, two backend, `db-0`), three Services (`db` is headless: `None`), the
@@ -150,12 +168,16 @@ backend reads its configuration:
 
 <!-- test: contains=frontend; output -->
 ```bash
-kubectl describe ingress learning-app -n learning-app | grep -A3 'Rules:'
-kubectl get endpointslices -n learning-app -o custom-columns=SERVICE:.metadata.labels.kubernetes\.io/service-name,ADDRESSES:.endpoints[*].addresses[0]
+kubectl get ingress learning-app -n learning-app -o jsonpath='{.spec.rules[0].host} -> service {.spec.rules[0].http.paths[0].backend.service.name}{"\n"}'
+kubectl get endpointslices -n learning-app -o 'custom-columns=SERVICE:.metadata.labels.kubernetes\.io/service-name,ADDRESSES:.endpoints[*].addresses[0]'
 ```
 
 ```text
-(recorded by the test run)
+learning-app.local -> service frontend
+SERVICE    ADDRESSES
+backend    10.244.120.91,10.244.120.66
+db         10.244.120.110
+frontend   10.244.120.123,10.244.120.124
 ```
 
 **Access it.** From your computer, through `port-forward` (open <http://localhost:8080> in a browser while it runs):
@@ -181,7 +203,9 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-(recorded by the test run)
+{"pod":"backend-57bb86cc6c-hlwgn","visits":1}
+warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
+{"pod":"backend-57bb86cc6c-hlwgn","visits":1}
 ```
 
 The request went Ingress → frontend → backend → database, and the database counted it.
@@ -202,7 +226,9 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-(recorded by the test run)
+{"pod":"backend-57bb86cc6c-5v5hq","visits":2}
+warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
+{"pod":"backend-57bb86cc6c-5v5hq","visits":2}
 ```
 
 The counter continued from where it was: the data lives on the PVC, not in the Pod.
@@ -225,7 +251,8 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-(recorded by the test run)
+...
+{"message":"Hello from the capstone","pod":"backend-784f965b6-2ff2d","version":"2.0.0"}
 ```
 
 <!-- test: contains=1.0.0; output -->
@@ -236,7 +263,16 @@ kubectl get deployment backend -n learning-app -o jsonpath='{.spec.template.spec
 ```
 
 ```text
-(recorded by the test run)
+Warning: resource deployments/backend was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.
+deployment.apps/backend rolled back
+Waiting for deployment "backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "backend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "backend" rollout to finish: 1 old replicas are pending termination...
+deployment "backend" successfully rolled out
+learning-app/backend:1.0.0
 ```
 
 **The nightly backup**, run now from its CronJob:
@@ -249,7 +285,9 @@ kubectl logs job/backup-now -n learning-app
 ```
 
 ```text
-(recorded by the test run)
+job.batch/backup-now created
+job.batch/backup-now condition met
+wrote /backup/app-20261006-114131.sql (1216 bytes)
 ```
 
 **Security, checked:** the developer may look, not delete; the frontend cannot reach the database:
@@ -311,7 +349,13 @@ kubectl get pods -n learning-app -l app.kubernetes.io/name=backend
 ```
 
 ```text
-(recorded by the test run)
+NAME                       READY   STATUS              RESTARTS   AGE
+backend-57bb86cc6c-8bntr   1/1     Running             0          115s
+backend-57bb86cc6c-bj9fp   0/1     ContainerCreating   0          2s
+backend-57bb86cc6c-ns858   1/1     Running             0          112s
+backend-57bb86cc6c-scb65   0/1     ContainerCreating   0          2s
+backend-59789c64fb-df4jm   0/1     ContainerCreating   0          2s
+backend-59789c64fb-mxrsc   0/1     ErrImagePull        0          2s
 ```
 
 *Investigation:* the new Pod cannot get its image; the events say why, and the rollout is stuck:
@@ -322,7 +366,7 @@ kubectl get events -n learning-app --field-selector reason=Failed -o custom-colu
 ```
 
 ```text
-(recorded by the test run)
+Failed to pull image "learning-app/backend:1.0.1": failed to pull and unpack image "docker.io/learning-app/backend:1.0.1": failed to resolve reference "docker.io/learning-app/backend:1.0.1": pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
 ```
 
 The users see nothing: with `maxUnavailable: 0` the old Pods keep serving until a new one is ready, which never
@@ -347,7 +391,9 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-(recorded by the test run)
+wget: server returned error: HTTP/1.1 502 Bad Gateway
+warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
+wget: server returned error: HTTP/1.1 502 Bad Gateway
 ```
 
 *Investigation:* the frontend answers (the error comes from nginx), the backend Pods are `Running` and ready. Does
@@ -361,7 +407,10 @@ kubectl get pods -n learning-app -l app.kubernetes.io/name=backend --show-labels
 ```
 
 ```text
-(recorded by the test run)
+endpoints: []
+selector: {"app.kubernetes.io/name":"backend-api"}
+NAME                       READY   STATUS    RESTARTS   AGE    LABELS
+backend-57bb86cc6c-8bntr   1/1     Running   0          2m8s   app.kubernetes.io/name=backend,app.kubernetes.io/part-of=learning-app,pod-template-hash=57bb86cc6c,tier=backend
 ```
 
 *Root cause:* no endpoints, because the selector `backend-api` matches no Pod (they are `backend`). *Fix:* apply
@@ -402,7 +451,8 @@ kubectl describe "$pod" -n learning-app | grep 'Readiness probe failed' | tail -
 ```
 
 ```text
-(recorded by the test run)
+false
+  Warning  Unhealthy  4s (x6 over 26s)  kubelet            spec.containers{backend}: Readiness probe failed: HTTP probe failed with statuscode: 503
 ```
 
 The probe gets `503` (`/readyz` answers `database unavailable`), or times out while the API is still trying to find
@@ -437,7 +487,11 @@ kubectl get pods -n learning-app -l app.kubernetes.io/name=frontend
 ```
 
 ```text
-(recorded by the test run)
+NAME                        READY   STATUS    RESTARTS   AGE
+frontend-6db66d9ff5-6l22k   1/1     Running   0          3m52s
+frontend-6db66d9ff5-mmwvl   1/1     Running   0          3m26s
+frontend-6db66d9ff5-mwc7j   1/1     Running   0          3m52s
+frontend-7c6ff85fd8-4fxrp   0/1     Running   0          15s
 ```
 
 *Investigation:* the new Pod runs but is never ready; its events say why:
@@ -448,7 +502,7 @@ kubectl get events -n learning-app --field-selector reason=Unhealthy -o custom-c
 ```
 
 ```text
-(recorded by the test run)
+Readiness probe failed: Get "http://10.244.120.125:9090/healthz": dial tcp 10.244.120.125:9090: connect: connection refused
 ```
 
 *Root cause:* nothing listens on 9090; nginx listens on 8080. *Fix:* the reviewed Deployment.
@@ -477,7 +531,10 @@ kubectl get pods -n learning-app -l job-name=backup-broken
 ```
 
 ```text
-(recorded by the test run)
+NAME         STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+db-backups   Pending                                      fast-ssd       <unset>                 11s
+NAME                  READY   STATUS    RESTARTS   AGE
+backup-broken-692c4   0/1     Pending   0          11s
 ```
 
 *Investigation:* the Pod waits for its volume, the volume waits for a provisioner:
@@ -489,7 +546,9 @@ kubectl get storageclass
 ```
 
 ```text
-(recorded by the test run)
+  Warning  ProvisioningFailed  1s (x2 over 11s)  persistentvolume-controller  storageclass.storage.k8s.io "fast-ssd" not found
+NAME                 PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+standard (default)   k8s.io/minikube-hostpath   Delete          Immediate           false                  10h
 ```
 
 *Root cause:* StorageClass `fast-ssd` does not exist; only `standard`. A PVC's class cannot be changed, so: delete
@@ -509,7 +568,7 @@ kubectl logs job/backup-fixed -n learning-app
 
 A "tidy-up" of the backend policy changes the label it allows:
 
-<!-- test: anyof=504||502||Gateway; output -->
+<!-- test: anyof=504||502||Gateway||timed out; output -->
 ```bash
 kubectl patch networkpolicy backend-from-frontend -n learning-app --type=json \
   -p '[{"op":"replace","path":"/spec/ingress/0/from/0/podSelector/matchLabels/tier","value":"front"}]' > /dev/null
@@ -519,8 +578,10 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-(recorded by the test run)
+wget: download timed out
 ```
+
+The request hangs until it times out (nginx would answer `504 Gateway Time-out` after its own 60 seconds).
 
 *Investigation:* every Pod is ready and every Service has endpoints (check both as in breaks 2 and 4), yet the
 frontend cannot get an answer from the backend. Test the path directly, as the frontend:
@@ -537,7 +598,9 @@ kubectl describe networkpolicy backend-from-frontend -n learning-app | grep -A2 
 ```
 
 ```text
-(recorded by the test run)
+    From:
+      PodSelector: tier=front
+  Not affecting egress traffic
 ```
 
 *Root cause:* the policy allows Pods labelled `tier: front`; the frontend Pods are `tier: frontend`, so the default
@@ -579,7 +642,19 @@ kubectl get pods -n learning-app
 ```
 
 ```text
-(recorded by the test run)
+{"pod":"backend-545fcbc75d-v6s2m","visits":6}
+warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
+{"pod":"backend-545fcbc75d-v6s2m","visits":6}
+NAME                        READY   STATUS      RESTARTS   AGE
+backend-545fcbc75d-7brbx    1/1     Running     0          64s
+backend-545fcbc75d-nrb92    1/1     Running     0          74s
+backend-545fcbc75d-qk9ms    1/1     Running     0          70s
+backend-545fcbc75d-v6s2m    1/1     Running     0          77s
+backend-545fcbc75d-w9z5q    1/1     Running     0          67s
+backup-fixed-26w7g          0/1     Completed   0          33s
+db-0                        1/1     Running     0          4m16s
+frontend-6db66d9ff5-mmwvl   1/1     Running     0          4m12s
+frontend-6db66d9ff5-mwc7j   1/1     Running     0          4m38s
 ```
 
 ## Common Mistakes
