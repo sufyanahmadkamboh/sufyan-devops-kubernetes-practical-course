@@ -35,7 +35,9 @@ LEVELS = [(1, "Kubernetes fundamentals", ["01", "02", "03"]), (2, "kubectl", ["0
           (12, "Ingress and networking", ["20", "21", "22"]), (13, "Security and RBAC", ["23", "24"]),
           (14, "Scaling and autoscaling", ["25", "26"]), (15, "Troubleshooting and Helm", ["27", "28"]),
           (16, "The capstone", ["29"])]
-TAIL = ["labs/12-troubleshooting/README.md", "docs/glossary.md", "docs/interview-questions.md"]
+TAIL = (["labs/12-troubleshooting/README.md"]
+        + sorted(p.relative_to(REPO).as_posix() for p in (REPO / "labs/12-troubleshooting").glob("[0-9][0-9]-*.md"))
+        + ["challenges/README.md", "docs/glossary.md", "docs/interview-questions.md"])
 MD_EXT = ["tables", "fenced_code", "md_in_html", "sane_lists"]
 
 CSS = """
@@ -144,7 +146,8 @@ def lesson_summary(readme: Path) -> str:
     text = clean(readme.read_text(encoding="utf-8"))
     title = re.search(r"^# (.+)$", text, re.M).group(1)
     parts = [f"## {title}"]
-    for name, label in [("What is it?", ""), ("Why do we need it?", "Why"), ("Architecture", "Architecture"),
+    for name, label in [("What is it?", ""), ("Why do we need it?", "Why"), ("How does it work?", "How it works"),
+                        ("Architecture", "Architecture"), ("Common Mistakes", "Common mistakes"),
                         ("Key Takeaways", "Key takeaways")]:
         body = section(text, name)
         if body:
@@ -188,8 +191,9 @@ def main() -> None:
 <div class="cover">
   <div class="kicker">Study guide · Kubernetes · from zero to practical</div>
   <h1>Kubernetes Practical Course<br>Kubernetes From Zero to Practical</h1>
-  <p>Every one of the {lessons} lessons on a page or less, level by level: what it is, why it exists, its diagram and
-     its key takeaways. Then the 14 troubleshooting problems, a glossary and {questions} interview questions.</p>
+  <p>Every one of the {lessons} lessons, level by level: what it is, why it exists, its diagram,
+     how it works, its common mistakes and its key takeaways. Then the 14 troubleshooting problems in full, the
+     challenges, a glossary and {questions} interview questions.</p>
   <p class="who">Sufyan Ahmad · DevOps Engineer<br>{REPO_URL}</p>
 </div>
 <div class="toc"><h1>Contents</h1><ul>{toc}</ul>
