@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thumbnail</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1280px;height:720px;overflow:hidden}
+  body{background:radial-gradient(900px 600px at 100% 0%,rgba(29,145,230,.35),transparent 60%),#0b1420;font-family:Inter,"Segoe UI",sans-serif;color:#f1f6fc;position:relative}
+  .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(156,195,240,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(156,195,240,.06) 1px,transparent 1px);background-size:48px 48px}
+  .num{position:absolute;right:56px;top:40px;font:900 190px/1 Inter;color:rgba(29,145,230,.22)}
+  .kicker{position:absolute;left:64px;top:64px;font-size:30px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#8ec9ff}
+  .title{position:absolute;left:64px;right:64px;top:150px;font-size:96px;font-weight:900;line-height:1.02;letter-spacing:-2px}
+  .sub{position:absolute;left:64px;bottom:150px;font-size:36px;font-weight:800;color:#ffc94d}
+  .term{position:absolute;left:64px;bottom:56px;font:700 30px "JetBrains Mono",Consolas,monospace;color:#9cc3f0;background:#0a0f18;border:3px solid #284468;border-radius:14px;padding:10px 20px}
+  .branch{position:absolute;right:70px;bottom:60px;font-size:150px;color:#1d91e6;line-height:1}
+</style>
+</head>
+<body>
+<div class="grid"></div>
+<div class="num" id="n"></div>
+<div class="kicker">Kubernetes Practical Course</div>
+<div class="title" id="t"></div>
+<div class="sub" id="s"></div>
+<div class="term">$ kubectl · real commands, real output</div>
+<div class="branch">☸</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  document.getElementById("n").textContent = q.get("n") || "";
+  document.getElementById("t").textContent = q.get("t") || "Kubernetes Practical Course";
+  document.getElementById("s").textContent = q.get("s") || "";
+  window.__ready = true;
+</script>
+</body>
+</html>
