@@ -117,11 +117,20 @@ The last line waits for the ingress controller: until it runs, its admission web
 
 **2. Deploy**, in dependency order (the namespace first, then identities and data, then the application):
 
-<!-- test: contains=statefulset.apps/db created; contains=ingress.networking.k8s.io/learning-app created -->
+<!-- test: contains=statefulset.apps/db created -->
 ```bash
 kubectl apply -f capstone/namespace.yaml
 kubectl apply -f capstone/security -f capstone/database -f capstone/storage -f capstone/backend \
-  -f capstone/frontend -f capstone/networking -f capstone/ingress -f capstone/jobs -f capstone/scaling
+  -f capstone/frontend -f capstone/networking -f capstone/jobs -f capstone/scaling
+```
+
+The Ingress last. The ingress controller checks every new Ingress through an admission webhook; for a few seconds
+after the addon starts, that webhook may not answer yet (`failed calling webhook "validate.nginx.ingress.kubernetes.io"
+… connection refused`). If you see that, wait a moment and apply again:
+
+<!-- test: contains=ingress.networking.k8s.io/learning-app; retry=30 -->
+```bash
+kubectl apply -f capstone/ingress
 ```
 
 **3. Wait** until every part is ready:
@@ -142,23 +151,23 @@ kubectl get pods,svc,ingress,pvc -n learning-app
 
 ```text
 NAME                            READY   STATUS    RESTARTS   AGE
-pod/backend-57bb86cc6c-bh77r    1/1     Running   0          12s
-pod/backend-57bb86cc6c-dxj87    1/1     Running   0          12s
-pod/db-0                        1/1     Running   0          12s
-pod/frontend-6db66d9ff5-jk7l8   1/1     Running   0          12s
-pod/frontend-6db66d9ff5-sjjd5   1/1     Running   0          12s
+pod/backend-57bb86cc6c-lw6fq    1/1     Running   0          13s
+pod/backend-57bb86cc6c-qtnf7    1/1     Running   0          13s
+pod/db-0                        1/1     Running   0          14s
+pod/frontend-6db66d9ff5-ph4vm   1/1     Running   0          13s
+pod/frontend-6db66d9ff5-thq6w   1/1     Running   0          13s
 
-NAME               TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-service/backend    ClusterIP   10.97.23.74    <none>        8080/TCP   12s
-service/db         ClusterIP   None           <none>        5432/TCP   12s
-service/frontend   ClusterIP   10.98.242.24   <none>        80/TCP     12s
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/backend    ClusterIP   10.103.145.93   <none>        8080/TCP   13s
+service/db         ClusterIP   None            <none>        5432/TCP   14s
+service/frontend   ClusterIP   10.97.8.38      <none>        80/TCP     13s
 
-NAME                                     CLASS   HOSTS                ADDRESS   PORTS   AGE
-ingress.networking.k8s.io/learning-app   nginx   learning-app.local             80      12s
+NAME                                     CLASS   HOSTS                ADDRESS        PORTS   AGE
+ingress.networking.k8s.io/learning-app   nginx   learning-app.local   192.168.49.2   80      13s
 
 NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-persistentvolumeclaim/data-db-0    Bound    pvc-7c9b4f71-b025-4d42-bfbd-abad88b6b8cf   1Gi        RWO            standard       <unset>                 12s
-persistentvolumeclaim/db-backups   Bound    pvc-dde34c5a-8385-43fb-ae9d-afc404801eb9   1Gi        RWO            standard       <unset>                 12s
+persistentvolumeclaim/data-db-0    Bound    pvc-184bd0a1-aa48-4f1d-b9fa-37ed5afbf383   1Gi        RWO            standard       <unset>                 14s
+persistentvolumeclaim/db-backups   Bound    pvc-44957502-c5e1-4db9-a6fc-9b5e6fe69463   1Gi        RWO            standard       <unset>                 14s
 ```
 
 Five Pods `Running` and `1/1` (two frontend, two backend, `db-0`), three Services (`db` is headless: `None`), the
@@ -178,9 +187,9 @@ kubectl get endpointslices -n learning-app -o 'custom-columns=SERVICE:.metadata.
 ```text
 learning-app.local -> service frontend
 SERVICE    ADDRESSES
-backend    10.244.120.88,10.244.120.72
-db         10.244.120.86
-frontend   10.244.120.69,10.244.120.124
+backend    10.244.120.73,10.244.120.80
+db         10.244.120.87
+frontend   10.244.120.121,10.244.120.77
 ```
 
 **Access it.** From your computer, through `port-forward` (open <http://localhost:8080> in a browser while it runs):
@@ -206,9 +215,9 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-{"pod":"backend-57bb86cc6c-dxj87","visits":1}
+{"pod":"backend-57bb86cc6c-lw6fq","visits":1}
 warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
-{"pod":"backend-57bb86cc6c-dxj87","visits":1}
+{"pod":"backend-57bb86cc6c-lw6fq","visits":1}
 ```
 
 The request went Ingress → frontend → backend → database, and the database counted it.
@@ -229,9 +238,9 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 ```
 
 ```text
-{"pod":"backend-57bb86cc6c-dxj87","visits":2}
+{"pod":"backend-57bb86cc6c-lw6fq","visits":2}
 warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
-{"pod":"backend-57bb86cc6c-dxj87","visits":2}
+{"pod":"backend-57bb86cc6c-lw6fq","visits":2}
 ```
 
 The counter continued from where it was: the data lives on the PVC, not in the Pod.
@@ -255,7 +264,7 @@ kubectl run client -n default --rm -i --quiet --restart=Never --image=busybox:1.
 
 ```text
 ...
-{"message":"Hello from the capstone","pod":"backend-784f965b6-tfvlr","version":"2.0.0"}
+{"message":"Hello from the capstone","pod":"backend-784f965b6-fh79k","version":"2.0.0"}
 ```
 
 <!-- test: contains=1.0.0; output -->
@@ -290,7 +299,7 @@ kubectl logs job/backup-now -n learning-app
 ```text
 job.batch/backup-now created
 job.batch/backup-now condition met
-wrote /backup/app-20261006-163640.sql (1216 bytes)
+wrote /backup/app-20261006-180712.sql (1216 bytes)
 ```
 
 **Security, checked:** the developer may look, not delete; the frontend cannot reach the database:
@@ -353,9 +362,12 @@ kubectl get pods -n learning-app -l app.kubernetes.io/name=backend
 
 ```text
 NAME                       READY   STATUS         RESTARTS   AGE
-backend-57bb86cc6c-k9vw2   1/1     Running        0          110s
-backend-57bb86cc6c-zbjrl   1/1     Running        0          112s
-backend-59789c64fb-z6jch   0/1     ErrImagePull   0          2s
+backend-57bb86cc6c-5p4vc   1/1     Running        0          27s
+backend-57bb86cc6c-lxw5z   1/1     Running        0          112s
+backend-57bb86cc6c-t6j5p   1/1     Running        0          109s
+backend-57bb86cc6c-tfpsm   1/1     Running        0          27s
+backend-57bb86cc6c-xr9tz   1/1     Running        0          27s
+backend-59789c64fb-2zz68   0/1     ErrImagePull   0          2s
 ```
 
 *Investigation:* the new Pod cannot get its image; the events say why, and the rollout is stuck:
@@ -410,7 +422,7 @@ kubectl get pods -n learning-app -l app.kubernetes.io/name=backend --show-labels
 endpoints: []
 selector: {"app.kubernetes.io/name":"backend-api"}
 NAME                       READY   STATUS    RESTARTS   AGE    LABELS
-backend-57bb86cc6c-flh6r   1/1     Running   0          4s     app.kubernetes.io/name=backend,app.kubernetes.io/part-of=learning-app,pod-template-hash=57bb86cc6c,tier=backend
+backend-57bb86cc6c-5p4vc   1/1     Running   0          34s    app.kubernetes.io/name=backend,app.kubernetes.io/part-of=learning-app,pod-template-hash=57bb86cc6c,tier=backend
 ```
 
 *Root cause:* no endpoints, because the selector `backend-api` matches no Pod (they are `backend`). *Fix:* apply
@@ -452,7 +464,7 @@ kubectl describe "$pod" -n learning-app | grep 'Readiness probe failed' | tail -
 
 ```text
 false
-  Warning  Unhealthy  3s (x6 over 25s)  kubelet            spec.containers{backend}: Readiness probe failed: HTTP probe failed with statuscode: 503
+  Warning  Unhealthy  4s (x6 over 26s)  kubelet            spec.containers{backend}: Readiness probe failed: HTTP probe failed with statuscode: 503
 ```
 
 The probe gets `503` (`/readyz` answers `database unavailable`), or times out while the API is still trying to find
@@ -488,10 +500,10 @@ kubectl get pods -n learning-app -l app.kubernetes.io/name=frontend
 
 ```text
 NAME                        READY   STATUS    RESTARTS   AGE
-frontend-6db66d9ff5-jk7l8   1/1     Running   0          3m40s
-frontend-6db66d9ff5-sjjd5   1/1     Running   0          3m40s
-frontend-6db66d9ff5-tmxd6   1/1     Running   0          3m16s
-frontend-7c6ff85fd8-x9xrq   0/1     Running   0          15s
+frontend-6db66d9ff5-hqtl4   1/1     Running   0          3m15s
+frontend-6db66d9ff5-ph4vm   1/1     Running   0          3m40s
+frontend-6db66d9ff5-thq6w   1/1     Running   0          3m40s
+frontend-7c6ff85fd8-mzn8k   0/1     Running   0          15s
 ```
 
 *Investigation:* the new Pod runs but is never ready; its events say why:
@@ -502,7 +514,7 @@ kubectl get events -n learning-app --field-selector reason=Unhealthy -o custom-c
 ```
 
 ```text
-Readiness probe failed: Get "http://10.244.120.127:9090/healthz": dial tcp 10.244.120.127:9090: connect: connection refused
+Readiness probe failed: Get "http://10.244.120.117:9090/healthz": dial tcp 10.244.120.117:9090: connect: connection refused
 ```
 
 *Root cause:* nothing listens on 9090; nginx listens on 8080. *Fix:* the reviewed Deployment.
@@ -532,9 +544,9 @@ kubectl get pods -n learning-app -l job-name=backup-broken
 
 ```text
 NAME         STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-db-backups   Pending                                      fast-ssd       <unset>                 10s
+db-backups   Pending                                      fast-ssd       <unset>                 11s
 NAME                  READY   STATUS    RESTARTS   AGE
-backup-broken-6xlm6   0/1     Pending   0          10s
+backup-broken-79gb2   0/1     Pending   0          11s
 ```
 
 *Investigation:* the Pod waits for its volume, the volume waits for a provisioner:
@@ -546,9 +558,9 @@ kubectl get storageclass
 ```
 
 ```text
-  Warning  ProvisioningFailed  10s   persistentvolume-controller  storageclass.storage.k8s.io "fast-ssd" not found
+  Warning  ProvisioningFailed  11s   persistentvolume-controller  storageclass.storage.k8s.io "fast-ssd" not found
 NAME                 PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
-standard (default)   k8s.io/minikube-hostpath   Delete          Immediate           false                  15h
+standard (default)   k8s.io/minikube-hostpath   Delete          Immediate           false                  17h
 ```
 
 *Root cause:* StorageClass `fast-ssd` does not exist; only `standard`. A PVC's class cannot be changed, so: delete
@@ -642,19 +654,19 @@ kubectl get pods -n learning-app
 ```
 
 ```text
-{"pod":"backend-59dfbb7b8f-z8rrm","visits":6}
+{"pod":"backend-6f7d74664b-x26j4","visits":6}
 warning: couldn't attach to pod/client, falling back to streaming logs: unable to upgrade connection: container client not found in pod client_default
-{"pod":"backend-59dfbb7b8f-z8rrm","visits":6}
+{"pod":"backend-6f7d74664b-x26j4","visits":6}
 NAME                        READY   STATUS      RESTARTS   AGE
-backend-59dfbb7b8f-89gc5    1/1     Running     0          67s
-backend-59dfbb7b8f-g2dgn    1/1     Running     0          64s
-backend-59dfbb7b8f-t74h4    1/1     Running     0          76s
-backend-59dfbb7b8f-v5g7b    1/1     Running     0          70s
-backend-59dfbb7b8f-z8rrm    1/1     Running     0          73s
-backup-fixed-r86cd          0/1     Completed   0          33s
+backend-6f7d74664b-7bjnl    1/1     Running     0          68s
+backend-6f7d74664b-bpsd8    1/1     Running     0          72s
+backend-6f7d74664b-vrg5c    1/1     Running     0          65s
+backend-6f7d74664b-x26j4    1/1     Running     0          75s
+backend-6f7d74664b-zqhrn    1/1     Running     0          78s
+backup-fixed-bxddw          0/1     Completed   0          34s
 db-0                        1/1     Running     0          4m7s
-frontend-6db66d9ff5-sjjd5   1/1     Running     0          4m26s
-frontend-6db66d9ff5-tmxd6   1/1     Running     0          4m2s
+frontend-6db66d9ff5-ph4vm   1/1     Running     0          4m27s
+frontend-6db66d9ff5-thq6w   1/1     Running     0          4m27s
 ```
 
 ## Common Mistakes

@@ -23,7 +23,7 @@ NetworkPolicy problems. Those are rarely practised.
   one ServiceAccount per component without API tokens, a read-only RBAC Role; rolling update and rollback; then six
   break/fix scenarios (image, Service, ConfigMap, probe, storage, NetworkPolicy); the same application as one Helm
   release
-- a __VIDEOS__-video series (full and silent versions), a __PAGES__-page study guide PDF, 13 diagrams, a glossary,
+- a 17-video series (full and silent versions), a 117-page study guide PDF, 13 diagrams, a glossary,
   22 interview questions and a final knowledge checklist
 
 **Engineering details**
@@ -31,7 +31,7 @@ NetworkPolicy problems. Those are rarely practised.
   writes the real outputs back into the lessons and resets the cluster between lessons (course namespaces, the
   default namespace, labelled cluster-wide objects, node labels and taints); a sandbox home and kubeconfig keep the
   author's clusters untouched; hung commands are stopped after their timeout
-- GitHub Actions runs all __BLOCKS__ blocks in four parallel groups on a fresh Minikube cluster, with the course
+- GitHub Actions runs all 750 blocks in four parallel groups on a fresh Minikube cluster, with the course
   images preloaded through a Docker Hub mirror; static checks validate every manifest and the rendered Helm chart
   against the Kubernetes 1.37 API (kubeconform), lint the chart, check links, ShellCheck the scripts and vet the Go code
 - the videos are generated from the lessons: one per level, two narrator voices, real recorded outputs, original

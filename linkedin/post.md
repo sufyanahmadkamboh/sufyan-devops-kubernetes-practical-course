@@ -17,9 +17,9 @@ Things I learned while building and testing it:
 🔹 a readiness probe's default timeout is 1 second: an endpoint that checks a database can fail it while being healthy
 🔹 Minikube's default network plugin ignores NetworkPolicies; the course starts the cluster with Calico so they are enforced
 
-✅ Every lesson is also a test: __BLOCKS__ code blocks run automatically in GitHub Actions on a fresh Minikube cluster, and the outputs in the lessons are the real outputs. No cloud account, nothing to pay.
+✅ Every lesson is also a test: 750 code blocks run automatically in GitHub Actions on a fresh Minikube cluster, and the outputs in the lessons are the real outputs. No cloud account, nothing to pay.
 
-Also included: 13 hands-on labs, 19 challenges at three levels with hidden solutions, a Helm chart with values per environment, a __VIDEOS__-video series (__DURATION__ in total, full and silent versions), a __PAGES__-page study guide PDF, 13 diagrams, a glossary and 22 interview questions.
+Also included: 13 hands-on labs, 19 challenges at three levels with hidden solutions, a Helm chart with values per environment, a 17-video series (1 h 55 min in total, full and silent versions), a 117-page study guide PDF, 13 diagrams, a glossary and 22 interview questions.
 
 🔗 Repository: https://github.com/sufyanahmadkamboh/sufyan-devops-kubernetes-practical-course
 🌐 All my projects: https://sufyanahmadkamboh.github.io/
