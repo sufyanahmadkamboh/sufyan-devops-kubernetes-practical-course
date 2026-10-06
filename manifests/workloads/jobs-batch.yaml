@@ -1,0 +1,15 @@
+# Six work items, at most two at a time: completions and parallelism.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: batch
+spec:
+  completions: 6                # the Job is done when 6 Pods have succeeded
+  parallelism: 2                # run at most 2 Pods at the same time
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: busybox:1.37
+          command: ["sh", "-c", "echo processing on $(hostname); sleep 2"]

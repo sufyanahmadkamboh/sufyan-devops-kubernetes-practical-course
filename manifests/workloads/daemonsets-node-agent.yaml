@@ -1,0 +1,38 @@
+# One agent Pod on every node: it reports how many Pod log folders the node holds. Lesson 18 explains every line.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-agent
+spec:
+  selector:
+    matchLabels:
+      app: node-agent
+  template:
+    metadata:
+      labels:
+        app: node-agent
+    spec:
+      containers:
+        - name: agent
+          image: busybox:1.37
+          env:
+            - name: NODE_NAME             # the node this Pod runs on, filled in by Kubernetes
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - sh
+            - -c
+            - while true; do echo "agent on $NODE_NAME sees $(ls /host/var/log/pods | wc -l) Pod log folders"; sleep 30; done
+          volumeMounts:
+            - name: pod-logs
+              mountPath: /host/var/log/pods
+              readOnly: true
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 50m, memory: 32Mi}
+      volumes:
+        - name: pod-logs
+          hostPath:                       # a folder of the node itself, not of the Pod
+            path: /var/log/pods
+            type: Directory

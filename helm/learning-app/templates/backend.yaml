@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    {{- include "learning-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "learning-app.selector" (dict "root" . "component" "backend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "learning-app.selector" (dict "root" . "component" "backend") | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532     # the image runs as the user "nonroot"; the kubelet can only verify a numeric user
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MESSAGE
+              value: {{ .Values.backend.message | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.backend.logLevel | quote }}
+            {{- if .Values.database.enabled }}
+            - name: DB_HOST
+              value: {{ .Release.Name }}-database
+            - name: DB_USER
+              value: {{ .Values.database.user | quote }}
+            - name: DB_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: DB_PASSWORD_FILE
+              value: /secrets/password
+            {{- end }}
+          {{- if .Values.database.enabled }}
+          volumeMounts:
+            - name: db-password
+              mountPath: /secrets
+              readOnly: true
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 8080
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+      {{- if .Values.database.enabled }}
+      volumes:
+        - name: db-password
+          secret:
+            secretName: {{ .Release.Name }}-database
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    {{- include "learning-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  selector:
+    {{- include "learning-app.selector" (dict "root" . "component" "backend") | nindent 4 }}
+  ports:
+    - port: 80
+      targetPort: 8080

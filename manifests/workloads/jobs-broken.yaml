@@ -1,0 +1,14 @@
+# A task that always fails: what a Job does when its Pod exits with an error.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: import
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: import
+          image: busybox:1.37
+          command: ["sh", "-c", "echo 'reading /data/prices.csv'; cat /data/prices.csv"]

@@ -1,0 +1,16 @@
+# A Pod that asks for resources (requests) and is held to a maximum (limits) (lesson 15).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sized
+spec:
+  containers:
+    - name: web
+      image: nginx:1.30-alpine
+      resources:
+        requests:
+          cpu: "100m"         # 0.1 CPU, reserved for this container when it is scheduled
+          memory: "64Mi"
+        limits:
+          cpu: "250m"         # throttled above 0.25 CPU
+          memory: "128Mi"     # killed (OOMKilled) above 128 MiB

@@ -1,0 +1,7 @@
+# The dev environment: one backend Pod, no database, a message that says where you are.
+backend:
+  replicas: 1
+  message: "Hello from DEV"
+  logLevel: debug
+frontend:
+  title: "Learning app (dev)"

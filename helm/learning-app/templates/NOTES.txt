@@ -1,0 +1,4 @@
+{{ .Release.Name }} is installed in the namespace {{ .Release.Namespace }}: backend {{ .Values.backend.image.tag }} x{{ .Values.backend.replicas }}{{ if .Values.database.enabled }}, with a database{{ end }}.
+
+Try it:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ .Release.Name }}-{{ if .Values.frontend.enabled }}frontend{{ else }}backend{{ end }} 8080:80

@@ -1,0 +1,95 @@
+{{- if .Values.database.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-database
+  labels:
+    {{- include "learning-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+type: Opaque
+stringData:
+  password: {{ .Values.database.password | quote }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-database
+  labels:
+    {{- include "learning-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.database.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-database
+  labels:
+    {{- include "learning-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate      # only one Pod may use the volume at a time
+  selector:
+    matchLabels:
+      {{- include "learning-app.selector" (dict "root" . "component" "database") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "learning-app.selector" (dict "root" . "component" "database") | nindent 8 }}
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.database.image }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.database.user | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.database.name | quote }}
+            - name: POSTGRES_PASSWORD_FILE
+              value: /secrets/password
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.database.user | quote }}]
+            periodSeconds: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+            - name: password
+              mountPath: /secrets
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-database
+        - name: password
+          secret:
+            secretName: {{ .Release.Name }}-database
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-database
+  labels:
+    {{- include "learning-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  selector:
+    {{- include "learning-app.selector" (dict "root" . "component" "database") | nindent 4 }}
+  ports:
+    - port: 5432
+      targetPort: 5432
+{{- end }}

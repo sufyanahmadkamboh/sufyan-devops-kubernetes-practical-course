@@ -1,0 +1,40 @@
+# The same StatefulSet, asking for a StorageClass the cluster does not have. Lesson 19, Break It.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: archive
+spec:
+  serviceName: archive         # the headless Service that gives each Pod its DNS name
+  replicas: 3
+  selector:
+    matchLabels:
+      app: archive
+  template:
+    metadata:
+      labels:
+        app: archive
+    spec:
+      initContainers:
+        - name: first-boot    # writes the page once, on the Pod's own disk, if it is not there yet
+          image: busybox:1.37
+          command: ["sh", "-c", "[ -f /data/index.html ] || echo \"$(hostname): created at $(date -u +%H:%M:%S)\" > /data/index.html"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: web
+          image: nginx:1.30-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:       # one PersistentVolumeClaim per Pod: data-archive-0, ...
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 64Mi

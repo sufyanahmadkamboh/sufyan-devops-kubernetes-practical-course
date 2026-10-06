@@ -1,0 +1,51 @@
+# Three web servers with a stable name, a stable DNS name and their own disk each. Lesson 19 explains every line.
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes
+spec:
+  clusterIP: None             # a headless Service: no virtual IP, one DNS name per Pod instead
+  selector:
+    app: notes
+  ports:
+    - port: 80
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notes
+spec:
+  serviceName: notes          # the headless Service that gives each Pod its DNS name
+  replicas: 3
+  selector:
+    matchLabels:
+      app: notes
+  template:
+    metadata:
+      labels:
+        app: notes
+    spec:
+      initContainers:
+        - name: first-boot    # writes the page once, on the Pod's own disk, if it is not there yet
+          image: busybox:1.37
+          command: ["sh", "-c", "[ -f /data/index.html ] || echo \"$(hostname): created at $(date -u +%H:%M:%S)\" > /data/index.html"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: web
+          image: nginx:1.30-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:       # one PersistentVolumeClaim per Pod: data-notes-0, data-notes-1, data-notes-2
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 64Mi

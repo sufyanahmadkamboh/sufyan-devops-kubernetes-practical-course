@@ -1,0 +1,28 @@
+# Two Pods that call the backend's CPU-heavy endpoint in a loop: the load for the autoscaler (lesson 26).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load
+  labels:
+    app: load
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: load
+  template:
+    metadata:
+      labels:
+        app: load
+    spec:
+      containers:
+        - name: load
+          image: busybox:1.37
+          command: ["sh", "-c", "while true; do wget -qO- -T 5 http://backend/api/burn?ms=400 > /dev/null; done"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 100m
+              memory: 16Mi

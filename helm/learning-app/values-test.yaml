@@ -1,0 +1,8 @@
+# The test environment: two backend Pods and a real database, like production but smaller.
+backend:
+  replicas: 2
+  message: "Hello from TEST"
+frontend:
+  title: "Learning app (test)"
+database:
+  enabled: true

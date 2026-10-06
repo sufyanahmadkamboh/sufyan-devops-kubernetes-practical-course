@@ -1,0 +1,21 @@
+# The capstone application as values for the course chart (helm/learning-app): the same frontend, backend and
+# database, without naming a namespace (helm install -n chooses it).
+#   helm install capstone helm/learning-app -n learning-app-helm --create-namespace -f capstone/helm/values-capstone.yaml
+backend:
+  replicas: 2
+  image:
+    repository: learning-app/backend
+    tag: "1.0.0"
+  message: "Hello from the capstone"
+  logLevel: info
+frontend:
+  enabled: true
+  replicas: 1
+  title: "Learning app (capstone, Helm)"
+database:
+  enabled: true
+  storage: 1Gi
+  name: app
+  user: app
+  # an obviously fake example; a real installation passes it with --set database.password=... from a secret store
+  password: example-password-change-me

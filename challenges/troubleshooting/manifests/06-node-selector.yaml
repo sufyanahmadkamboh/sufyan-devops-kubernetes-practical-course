@@ -1,0 +1,28 @@
+# Troubleshooting challenge 06 (broken on purpose).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      nodeSelector:
+        disktype: ssd
+      containers:
+        - name: cache
+          image: busybox:1.37
+          command: ["sleep", "3600"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 16Mi

@@ -692,8 +692,15 @@ count on the command line; the backend answers.
 <details>
 <summary>Solution</summary>
 
-See the Helm part of the capstone in [capstone/helm/README.md](../../capstone/helm/README.md): it is filled in once
-the course chart (lesson 28) is final.
+<!-- test: skip -->
+```bash
+helm install capstone helm/learning-app -n learning-app-helm --create-namespace   -f capstone/helm/values-capstone.yaml --set backend.replicas=3 --wait --timeout 5m
+helm list -n learning-app-helm
+kubectl get deployments -n learning-app-helm
+```
+
+`--set backend.replicas=3` overrides the value of the file. The tested walkthrough, with its real output and a
+comparison of both ways of deploying, is [capstone/helm/README.md](../../capstone/helm/README.md).
 
 </details>
 

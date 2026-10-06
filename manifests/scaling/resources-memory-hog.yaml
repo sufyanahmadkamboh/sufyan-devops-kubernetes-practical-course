@@ -1,0 +1,17 @@
+# A container whose memory grows without end, with a 32 MiB limit: the kernel kills it (lesson 15).
+# `tail /dev/zero` waits for a line break that never comes, holding everything it read: its memory grows without end.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-hog
+spec:
+  restartPolicy: Never
+  containers:
+    - name: hog
+      image: alpine:3.23
+      command: ["tail", "/dev/zero"]
+      resources:
+        requests:
+          memory: "32Mi"
+        limits:
+          memory: "32Mi"

@@ -1,0 +1,33 @@
+# Troubleshooting challenge 05 (broken on purpose).
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-quota
+spec:
+  hard:
+    pods: "2"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.30-alpine
+          resources:
+            requests:
+              cpu: 20m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

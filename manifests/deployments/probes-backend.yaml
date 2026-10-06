@@ -1,0 +1,41 @@
+# The backend with all three probes (lesson 14). STARTUP_DELAY makes it start slowly, like a real application.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: learning-app/backend:1.0.0
+          env:
+            - name: STARTUP_DELAY
+              value: "15"
+          ports:
+            - containerPort: 8080
+          startupProbe:                 # "has it finished starting?" Other probes wait until this succeeds.
+            httpGet:
+              path: /livez
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 30        # up to 2 s × 30 = 60 s to start
+          readinessProbe:               # "can it receive traffic now?" Failing = removed from the Service.
+            httpGet:
+              path: /readyz
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:                # "is it still alive?" Failing = the container is restarted.
+            httpGet:
+              path: /livez
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3

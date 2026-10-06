@@ -1,0 +1,30 @@
+# The backend with a sidecar container that writes its own log lines: kubectl logs -c (lesson 27).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-with-sidecar
+  labels:
+    app: api-with-sidecar
+spec:
+  containers:
+    - name: backend
+      image: learning-app/backend:1.0.0
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 64Mi
+    - name: log-shipper
+      image: busybox:1.37
+      command: ["sh", "-c", "i=0; while true; do i=$((i+1)); echo \"log-shipper: shipped batch $i\"; sleep 5; done"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 8Mi
+        limits:
+          cpu: 50m
+          memory: 16Mi

@@ -1,0 +1,15 @@
+# A one-time task: count down from 5, then finish. Lesson 17 explains every line.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: countdown
+spec:
+  backoffLimit: 2               # retry a failed Pod at most twice
+  ttlSecondsAfterFinished: 600  # delete the finished Job (and its Pod) after 10 minutes
+  template:
+    spec:
+      restartPolicy: Never      # a Job's Pod must not restart in place: Never or OnFailure
+      containers:
+        - name: countdown
+          image: busybox:1.37
+          command: ["sh", "-c", "for i in 5 4 3 2 1; do echo $i; sleep 1; done; echo liftoff"]

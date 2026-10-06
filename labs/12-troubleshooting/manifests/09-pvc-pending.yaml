@@ -1,0 +1,35 @@
+# Problem 09 (broken on purpose): a claim for a StorageClass the cluster does not have.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data
+spec:
+  storageClassName: fast-ssd
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: writer
+spec:
+  containers:
+    - name: writer
+      image: busybox:1.37
+      command: ["sh", "-c", "date > /data/started.txt; exec sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+      resources:
+        requests:
+          cpu: 10m
+          memory: 8Mi
+        limits:
+          cpu: 50m
+          memory: 16Mi
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data

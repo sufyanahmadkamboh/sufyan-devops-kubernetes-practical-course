@@ -1,0 +1,22 @@
+# An autoscaler for the backend Deployment (lesson 26): 1 to 5 Pods, aiming at 50% of the CPU each Pod requests.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 30   # the default is 300 (5 minutes); shortened so the lab shows the scale-down

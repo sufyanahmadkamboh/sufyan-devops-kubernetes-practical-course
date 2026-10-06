@@ -1,0 +1,32 @@
+# Default values for learning-app. Every value can be overridden with -f values-dev.yaml or --set key=value.
+
+backend:
+  replicas: 2
+  image:
+    repository: learning-app/backend
+    tag: "1.0.0"
+  message: "Hello from the backend"
+  logLevel: info
+  resources:
+    requests:
+      cpu: 100m
+      memory: 32Mi
+    limits:
+      cpu: 500m
+      memory: 64Mi
+
+frontend:
+  enabled: true
+  replicas: 1
+  image: nginx:1.30-alpine
+  title: "Learning app"
+
+database:
+  # PostgreSQL with a PersistentVolumeClaim; when false the backend runs without a database
+  enabled: false
+  image: postgres:18-alpine
+  storage: 1Gi
+  name: app
+  user: app
+  # an obviously fake example: pass a real one with --set database.password=... (or use an existing Secret)
+  password: example-password-change-me

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: learning-app
+description: The course application (frontend, backend, optional PostgreSQL) packaged as one Helm chart (lesson 28).
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

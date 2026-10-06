@@ -1,0 +1,20 @@
+# Every minute, a Job that writes a short report. Lesson 17 explains every line.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: report
+spec:
+  schedule: "* * * * *"         # minute hour day-of-month month day-of-week: every minute
+  concurrencyPolicy: Forbid     # never start a new run while the previous one is still running
+  successfulJobsHistoryLimit: 3 # keep the 3 latest successful Jobs
+  failedJobsHistoryLimit: 1     # and the latest failed one
+  jobTemplate:                  # the Job created at each scheduled time
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: report
+              image: busybox:1.37
+              command: ["sh", "-c", "echo \"report at $(date -u +%H:%M:%S)\""]

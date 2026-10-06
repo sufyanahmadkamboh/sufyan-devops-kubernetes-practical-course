@@ -1,0 +1,44 @@
+# Problem 07 (broken on purpose): the Deployment reads a ConfigMap key that does not exist.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  MESSAGE: "Hello from the ConfigMap"
+  LOG_LEVEL: info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: learning-app/backend:1.0.0
+          env:
+            - name: MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: MESSAGE
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: log_level
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi

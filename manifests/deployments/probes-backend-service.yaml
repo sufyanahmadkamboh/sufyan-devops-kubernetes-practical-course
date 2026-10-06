@@ -1,0 +1,11 @@
+# The Service in front of the backend: only Ready Pods receive its traffic (lesson 14).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: 8080

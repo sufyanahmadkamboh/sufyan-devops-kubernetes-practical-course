@@ -1,0 +1,21 @@
+# Troubleshooting challenge 04 (broken on purpose).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: export
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: export
+          image: busybox:1.37
+          command: ["sh", "-c", "echo 'exporting to /exports'; mkdir /exports/today && echo done"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 16Mi

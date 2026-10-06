@@ -1,0 +1,22 @@
+# Problem 01 (broken on purpose): a Deployment whose Pod asks for more CPU than any node has.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: report
+  template:
+    metadata:
+      labels:
+        app: report
+    spec:
+      containers:
+        - name: report
+          image: learning-app/backend:1.0.0
+          resources:
+            requests:
+              cpu: "64"          # 64 whole CPUs
+              memory: 32Mi

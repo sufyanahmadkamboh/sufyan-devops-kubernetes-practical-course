@@ -1,0 +1,41 @@
+# Broken on purpose (lesson 26): an autoscaler for a Deployment whose container requests no CPU.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reports
+  labels:
+    app: reports
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reports
+  template:
+    metadata:
+      labels:
+        app: reports
+    spec:
+      containers:
+        - name: reports
+          image: learning-app/backend:1.0.0
+          ports:
+            - containerPort: 8080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: reports
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reports
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

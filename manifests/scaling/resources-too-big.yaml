@@ -1,0 +1,12 @@
+# A Pod that asks for more CPU than any node has: it can never be scheduled (lesson 15).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: too-big
+spec:
+  containers:
+    - name: web
+      image: nginx:1.30-alpine
+      resources:
+        requests:
+          cpu: "100"

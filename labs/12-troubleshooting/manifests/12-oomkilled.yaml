@@ -1,0 +1,19 @@
+# Problem 12 (broken on purpose): a job that needs about 100 MiB of memory, limited to 48 MiB.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: import
+spec:
+  restartPolicy: Never
+  containers:
+    - name: import
+      image: busybox:1.37
+      # "tail" keeps the whole 100 MiB in memory while it looks for the last line (/dev/zero has no line breaks)
+      command: ["sh", "-c", "echo 'loading 100 MiB of records'; head -c 100m /dev/zero | tail > /dev/null; echo 'import done'"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          cpu: 200m
+          memory: 48Mi

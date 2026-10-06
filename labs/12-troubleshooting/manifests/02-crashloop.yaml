@@ -1,0 +1,32 @@
+# Problem 02 (broken on purpose): a worker that refuses to start without its configuration.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: busybox:1.37
+          command:
+            - sh
+            - -c
+            - |
+              echo "worker starting"
+              if [ -z "$QUEUE_URL" ]; then echo "fatal: QUEUE_URL is not set" >&2; exit 1; fi
+              echo "connected to $QUEUE_URL"; exec sleep 3600
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 16Mi
