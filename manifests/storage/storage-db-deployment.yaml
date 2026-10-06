@@ -1,0 +1,36 @@
+# PostgreSQL 18 with its data on the claim db-data: the data survives Pod restarts and deletions (lesson 13).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate                  # never two database Pods on the same volume at once
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:18-alpine
+          env:
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_DB
+              value: app
+            - name: POSTGRES_PASSWORD
+              value: example-password-change-me   # a Secret in lesson 12; plain here to focus on storage
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql  # PostgreSQL 18 keeps its data below this folder
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: db-data

@@ -1,0 +1,21 @@
+# The frontend's web page and Nginx site configuration, as files (lesson 11).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-files
+data:
+  index.html: |
+    <!doctype html>
+    <html><head><title>Learning app</title></head>
+    <body><h1>Served from a ConfigMap</h1></body></html>
+  default.conf: |
+    server {
+      listen 80;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+      location = /healthz {
+        return 200 "ok\n";
+      }
+    }

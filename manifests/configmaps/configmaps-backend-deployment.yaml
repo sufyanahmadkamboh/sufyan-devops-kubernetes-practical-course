@@ -1,0 +1,29 @@
+# The backend reads MESSAGE and LOG_LEVEL from the ConfigMap backend-config (lesson 11).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: learning-app/backend:1.0.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MESSAGE                # one variable, from one key
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: MESSAGE
+          envFrom:                         # every key of the ConfigMap becomes a variable
+            - configMapRef:
+                name: backend-config

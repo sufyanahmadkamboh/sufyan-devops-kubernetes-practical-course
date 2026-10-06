@@ -1,0 +1,12 @@
+# A claim that matches the hand-made PersistentVolume lab-pv (storageClassName "manual") (lesson 13).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lab-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi

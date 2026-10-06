@@ -1,0 +1,10 @@
+# A second StorageClass using Minikube's provisioner, keeping volumes when their claim is deleted (lesson 13).
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: keep
+  labels:
+    course: k8s-lab
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Retain
+volumeBindingMode: Immediate

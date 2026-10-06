@@ -1,0 +1,17 @@
+# A PersistentVolume created by hand (static provisioning): a folder on the Minikube node (lesson 13).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: lab-pv
+  labels:
+    course: k8s-lab
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: manual
+  hostPath:
+    path: /data/lab-pv
+    type: DirectoryOrCreate

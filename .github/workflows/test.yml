@@ -39,7 +39,7 @@ jobs:
       - name: Relative links in every Markdown file
         run: python3 tests/check_links.py
       - name: Manifests are valid Kubernetes 1.37 objects
-        run: kubeconform -strict -kubernetes-version 1.37.0 -summary -ignore-filename-pattern 'capstone/helm/' manifests/ capstone/
+        run: kubeconform -strict -kubernetes-version 1.37.0 -summary -ignore-filename-pattern 'capstone.helm' manifests/ capstone/
       - name: Helm chart (lint, and the rendered objects are valid)
         run: |
           helm lint helm/learning-app
