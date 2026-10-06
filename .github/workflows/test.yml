@@ -33,9 +33,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Tools (kubeconform, Helm)
         run: |
-          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz kubeconform
-          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz --strip-components=1 linux-amd64/helm
-          sudo mv kubeconform helm /usr/local/bin/
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz -C /tmp kubeconform
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz -C /tmp --strip-components=1 linux-amd64/helm
+          sudo mv /tmp/kubeconform /tmp/helm /usr/local/bin/
       - name: Relative links in every Markdown file
         run: python3 tests/check_links.py
       - name: Manifests are valid Kubernetes 1.37 objects
@@ -69,8 +69,8 @@ jobs:
         run: |
           curl -fsSLo minikube "https://github.com/kubernetes/minikube/releases/download/${MINIKUBE_VERSION}/minikube-linux-amd64"
           curl -fsSLo kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz --strip-components=1 linux-amd64/helm
-          chmod +x minikube kubectl && sudo mv minikube kubectl helm /usr/local/bin/
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz -C /tmp --strip-components=1 linux-amd64/helm
+          chmod +x minikube kubectl && sudo mv minikube kubectl /tmp/helm /usr/local/bin/
           minikube version --short && kubectl version --client && helm version --short
       - name: The course cluster, with the course's images loaded
         run: bash tests/ci-preload.sh
