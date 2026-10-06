@@ -103,8 +103,8 @@ kubectl get pods -n kubectl-lab -o wide
 ```text
 NAME   READY   STATUS    RESTARTS   AGE
 web    1/1     Running   0          1s
-NAME   READY   STATUS    RESTARTS   AGE   IP              NODE       NOMINATED NODE   READINESS GATES
-web    1/1     Running   0          1s    10.244.120.79   minikube   <none>           <none>
+NAME   READY   STATUS    RESTARTS   AGE   IP               NODE       NOMINATED NODE   READINESS GATES
+web    1/1     Running   0          1s    10.244.120.116   minikube   <none>           <none>
 ```
 
 `-o wide` adds the Pod's IP address and the node it runs on. `READY 1/1`: one of one containers is ready.
@@ -123,7 +123,7 @@ kubectl get pod web -n kubectl-lab -o yaml | grep -E '^  (name|namespace|uid):|i
 | Syntax | `kubectl describe TYPE NAME [-n NS]` |
 | Troubleshooting | the Events section is where Kubernetes says *why* something is wrong (lesson 27) |
 
-<!-- test: contains=Started; output -->
+<!-- test: contains=Started; retry=10; output -->
 ```bash
 kubectl describe pod web -n kubectl-lab | grep -A8 '^Events'
 ```
@@ -132,10 +132,10 @@ kubectl describe pod web -n kubectl-lab | grep -A8 '^Events'
 Events:
   Type    Reason     Age   From               Message
   ----    ------     ----  ----               -------
-  Normal  Scheduled  1s    default-scheduler  Successfully assigned kubectl-lab/web to minikube
-  Normal  Pulled     0s    kubelet            spec.containers{web}: Container image "nginx:1.30-alpine" already present on machine and can be accessed by the pod
-  Normal  Created    0s    kubelet            spec.containers{web}: Container created
-  Normal  Started    0s    kubelet            spec.containers{web}: Container started
+  Normal  Scheduled  2s    default-scheduler  Successfully assigned kubectl-lab/web to minikube
+  Normal  Pulled     1s    kubelet            spec.containers{web}: Container image "nginx:1.30-alpine" already present on machine and can be accessed by the pod
+  Normal  Created    1s    kubelet            spec.containers{web}: Container created
+  Normal  Started    1s    kubelet            spec.containers{web}: Container started
 ```
 
 The whole life of the Pod in four lines: the scheduler placed it, the kubelet found the image, created and started
@@ -202,9 +202,9 @@ Deployment, which created a ReplicaSet, which created a Pod (lessons 08–09).
 
 **10. `kubectl get events`**: everything that happened in a namespace, newest last.
 
-<!-- test: contains=ScalingReplicaSet -->
+<!-- test: contains=ScalingReplicaSet; retry=10 -->
 ```bash
-kubectl get events -n kubectl-lab --sort-by=.lastTimestamp | tail -5
+kubectl get events -n kubectl-lab --sort-by=.lastTimestamp | grep -E 'deployment/|replicaset/|pod/api'
 ```
 
 **11. `kubectl edit`** opens the live object in an editor and applies your changes when you save. It is interactive,

@@ -274,6 +274,10 @@ def run_block(block: Block, cwd: str, record_to: Path | None) -> tuple[bool, str
                 out = sanitize(setup_out)
                 return False, f"exit status {rc} (before the retried part)\n{out[-3000:]}", out, cwd
             code = "\n".join(lines[at:])
+    # a short-lived client (kubectl run --rm -i) can finish before kubectl attaches to it, and its output is lost; on
+    # slow CI machines this happens now and then. Such blocks get two more tries (--rm removes the Pod each time).
+    if tries == 1 and re.search(r"kubectl run\b[^\n]*(\\\n[^\n]*)*--rm", block.code):
+        tries = 3
     problems: list[str] = []
     out, rc, new_cwd = "", 0, cwd
     for attempt in range(tries):

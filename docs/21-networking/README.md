@@ -161,7 +161,7 @@ A client in **another** namespace uses the same short name:
 
 <!-- test: fail; contains=bad address; output -->
 ```bash
-kubectl create namespace other > /dev/null
+kubectl create namespace other --dry-run=client -o yaml | kubectl apply -f - > /dev/null
 kubectl run client -n other --rm -i --quiet --restart=Never --image=busybox:1.37 -- wget -qO- -T 5 http://web 2>&1
 ```
 

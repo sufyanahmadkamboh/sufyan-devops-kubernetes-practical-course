@@ -94,6 +94,9 @@ Rules:
 - To reach a Service from the test, run a client inside the cluster:
   `kubectl run client --rm -i --restart=Never --image=busybox:1.37 -- wget -qO- -T 5 http://web` (add `-n NS`).
   `kubectl port-forward` needs a background process: start it with `&`, save `$!`, `kill` it in the same block.
+- A `kubectl run --rm -i` client can finish before kubectl attaches, and its output is lost (now and then on slow
+  machines): the runner tries such blocks up to three times, so keep them repeatable (`create ... --dry-run=client
+  -o yaml | kubectl apply -f -` instead of `create`).
 - Never start a follower in the background and leave it (`kubectl logs -f`, `kubectl get -w`); use `--tail`,
   `--since`, `kubectl wait`.
 - Blocks run with `bash -e`: capture an exit code with `code=0; cmd || code=$?`.
