@@ -1,0 +1,6 @@
+tests/out/
+tests/.lock
+video/out/
+__pycache__/
+*.pyc
+.env

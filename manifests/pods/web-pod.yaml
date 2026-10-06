@@ -1,0 +1,13 @@
+# A single nginx Pod, used by lesson 04 to practise kubectl. Lesson 06 explains every line.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  containers:
+    - name: web
+      image: nginx:1.30-alpine
+      ports:
+        - containerPort: 80
