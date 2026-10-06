@@ -1,0 +1,18 @@
+# Lesson 08, Break It: the selector does not match the labels of the Pod template.
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: web-broken
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.30-alpine

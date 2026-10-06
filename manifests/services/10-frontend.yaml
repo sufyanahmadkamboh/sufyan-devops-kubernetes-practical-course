@@ -1,0 +1,12 @@
+# Lesson 10: a "frontend" Pod that calls the backend by its Service name, every few seconds, and logs the answer.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  containers:
+    - name: frontend
+      image: busybox:1.37
+      command: ["sh", "-c", "while true; do wget -qO- -T 3 http://backend-service/ || echo 'backend-service not reachable'; echo; sleep 3; done"]

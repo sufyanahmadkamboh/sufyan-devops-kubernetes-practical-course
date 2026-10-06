@@ -1,0 +1,9 @@
+# Lab 01, Break It: one wrong letter.
+apiVersion: v1
+kind: pod
+metadata:
+  name: colleague-pod
+spec:
+  containers:
+    - name: web
+      image: nginx:1.30-alpine

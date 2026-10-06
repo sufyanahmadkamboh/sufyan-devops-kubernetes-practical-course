@@ -1,0 +1,11 @@
+# A small Pod for lesson 05: the same file goes into any namespace with -n.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello
+  labels:
+    app: hello
+spec:
+  containers:
+    - name: hello
+      image: nginx:1.30-alpine

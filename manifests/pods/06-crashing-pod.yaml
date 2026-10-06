@@ -1,0 +1,10 @@
+# Lesson 06, Break It: a container that exits with an error right after starting.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crasher
+spec:
+  containers:
+    - name: crasher
+      image: busybox:1.37
+      command: ["sh", "-c", "echo starting; echo 'missing configuration, giving up'; exit 1"]

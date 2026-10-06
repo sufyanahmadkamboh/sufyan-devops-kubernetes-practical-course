@@ -1,0 +1,26 @@
+# Lesson 06: two containers in one Pod. The sidecar writes the web page every 5 seconds into a shared volume; nginx
+# serves it. Both containers share the Pod's network (localhost) and the volume "html".
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-with-sidecar
+  labels:
+    app: web-with-sidecar
+spec:
+  volumes:
+    - name: html
+      emptyDir: {}
+  containers:
+    - name: web
+      image: nginx:1.30-alpine
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+    - name: sidecar
+      image: busybox:1.37
+      command: ["sh", "-c", "while true; do echo \"page written by the sidecar at $(date +%T)\" > /html/index.html; sleep 5; done"]
+      volumeMounts:
+        - name: html
+          mountPath: /html

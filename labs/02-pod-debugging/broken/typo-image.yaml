@@ -1,0 +1,9 @@
+# Lab 02, problem 1: a typo in the image tag.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shop-web
+spec:
+  containers:
+    - name: web
+      image: nginx:1.30-alpne

@@ -1,0 +1,13 @@
+# Lesson 10: the same backend Pods, exposed on a port of the node (NodePort).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-nodeport
+spec:
+  type: NodePort
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30080

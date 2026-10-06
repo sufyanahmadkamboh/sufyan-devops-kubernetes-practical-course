@@ -1,0 +1,10 @@
+# Lab 02, problem 2: an application that refuses to start without its setting APP_MODE.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shop-worker
+spec:
+  containers:
+    - name: worker
+      image: busybox:1.37
+      command: ["sh", "-c", "if [ -z \"$APP_MODE\" ]; then echo 'ERROR: APP_MODE is not set'; exit 1; fi; echo \"worker running in $APP_MODE mode\"; sleep 3600"]

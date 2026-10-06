@@ -1,0 +1,10 @@
+# Lesson 05, Break It: a Pod that names a namespace which does not exist yet.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello
+  namespace: qa
+spec:
+  containers:
+    - name: hello
+      image: nginx:1.30-alpine

@@ -1,0 +1,11 @@
+# Lab 04: the Service, fixed.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector:
+    app: api
+  ports:
+    - port: 80
+      targetPort: 8080
