@@ -1,0 +1,81 @@
+# Three tiers for lesson 22: frontend → backend → database. Before any NetworkPolicy, everything can reach everything.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  containers:
+    - name: frontend                 # stands in for a web frontend: a shell to send requests from
+      image: busybox:1.37
+      command: ["sleep", "86400"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: api
+          image: learning-app/backend:1.0.0
+          env:                       # /readyz answers "ready" only when the database answers
+            - {name: DB_HOST, value: database}
+            - {name: DB_USER, value: app}
+            - {name: DB_NAME, value: app}
+            - {name: DB_PASSWORD, value: example-password-change-me}   # a lab value; Secrets are lesson 12
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:18-alpine
+          env:
+            - {name: POSTGRES_USER, value: app}
+            - {name: POSTGRES_DB, value: app}
+            - {name: POSTGRES_PASSWORD, value: example-password-change-me}
+          ports:
+            - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  selector:
+    app: database
+  ports:
+    - port: 5432

@@ -1,0 +1,11 @@
+# Lab 09, Break It: the Service after a "cleanup". Can you see the mistake before running it?
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8081

@@ -1,0 +1,24 @@
+# "May look at Pods and their logs, in this namespace only." Lesson 24 explains every line.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-viewer
+rules:
+  - apiGroups: [""]                       # "" = the core API group (Pods, Services, ConfigMaps...)
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]       # read only: no create, update, patch, delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-views-pods
+subjects:                                  # who gets the permissions
+  - kind: User
+    name: developer
+    apiGroup: rbac.authorization.k8s.io
+  - kind: ServiceAccount                   # a workload identity can be bound the same way
+    name: reporter
+roleRef:                                   # which permissions (cannot be changed after creation)
+  kind: Role
+  name: pod-viewer
+  apiGroup: rbac.authorization.k8s.io

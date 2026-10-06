@@ -1,0 +1,11 @@
+# A Pod that does not need the Kubernetes API: no token is mounted into it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-token
+spec:
+  automountServiceAccountToken: false
+  containers:
+    - name: shell
+      image: alpine:3.23
+      command: ["sleep", "86400"]

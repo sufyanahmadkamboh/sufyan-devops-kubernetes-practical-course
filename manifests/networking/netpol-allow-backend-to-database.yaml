@@ -1,0 +1,19 @@
+# The database accepts traffic from the backend, on port 5432 only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-database
+spec:
+  podSelector:
+    matchLabels:
+      app: database                  # the Pods this policy protects
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend           # who may connect
+      ports:
+        - protocol: TCP
+          port: 5432                 # to which port

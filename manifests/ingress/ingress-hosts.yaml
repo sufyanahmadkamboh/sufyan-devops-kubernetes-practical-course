@@ -1,0 +1,28 @@
+# Host-based routing: one Ingress, two host names, two Services. Lesson 20 explains every line.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: by-host
+spec:
+  ingressClassName: nginx            # which ingress controller handles this Ingress
+  rules:
+    - host: app.local                # requests for app.local ...
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service   # ... go to the frontend
+                port:
+                  number: 80
+    - host: api.local                # requests for api.local ...
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service    # ... go to the backend
+                port:
+                  number: 8080

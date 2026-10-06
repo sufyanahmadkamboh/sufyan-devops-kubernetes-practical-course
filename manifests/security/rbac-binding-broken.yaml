@@ -1,0 +1,13 @@
+# A RoleBinding with a typo in the Role's name. Lesson 24, Break It.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tester-views-pods
+subjects:
+  - kind: User
+    name: tester
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-viewers                        # the Role is called pod-viewer
+  apiGroup: rbac.authorization.k8s.io

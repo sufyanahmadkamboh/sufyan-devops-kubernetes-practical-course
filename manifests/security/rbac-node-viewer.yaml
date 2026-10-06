@@ -1,0 +1,26 @@
+# Nodes belong to no namespace, so reading them needs a ClusterRole and a ClusterRoleBinding.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: course-node-viewer
+  labels:
+    course: k8s-lab
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: course-developer-views-nodes
+  labels:
+    course: k8s-lab
+subjects:
+  - kind: User
+    name: developer
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: course-node-viewer
+  apiGroup: rbac.authorization.k8s.io

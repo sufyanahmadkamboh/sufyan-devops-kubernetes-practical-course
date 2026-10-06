@@ -1,0 +1,26 @@
+# Lab 11: a ServiceAccount for a CI pipeline that deploys to the namespace, and its permissions.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer
+rules:
+  - apiGroups: ["apps"]                  # Deployments live in the "apps" API group
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
