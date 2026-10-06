@@ -1,0 +1,539 @@
+1
+00:00:04,800 --> 00:00:06,825
+What is Kubernetes?
+
+2
+00:00:07,367 --> 00:00:14,660
+Kubernetes is a system that runs and looks after containerized applications for you, on one or many machines.
+
+3
+00:00:14,660 --> 00:00:18,540
+You tell it what you want ("three copies of my web server,
+
+4
+00:00:18,540 --> 00:00:24,629
+reachable on one address, always running") and it works continuously to make reality match:
+
+5
+00:00:24,629 --> 00:00:28,376
+it starts the containers, restarts them when they crash,
+
+6
+00:00:28,376 --> 00:00:34,866
+replaces them when a machine dies, spreads traffic across them and updates them without downtime.
+
+7
+00:00:34,866 --> 00:00:35,602
+An analogy:
+
+8
+00:00:35,602 --> 00:00:40,553
+Docker is a skilled cook who can prepare any dish (container) you ask for.
+
+9
+00:00:40,553 --> 00:00:43,029
+Kubernetes is the restaurant manager:
+
+10
+00:00:43,029 --> 00:00:49,853
+it decides which cook prepares what, notices when a cook goes home sick and hands the work to another,
+
+11
+00:00:49,853 --> 00:00:57,146
+opens more stations when the restaurant is busy, and keeps the menu (your desired state) written on the wall.
+
+12
+00:00:57,700 --> 00:01:01,934
+With one container on one machine, Docker is enough.
+
+13
+00:01:01,934 --> 00:01:04,865
+Applications rarely stay that small:
+
+14
+00:01:06,600 --> 00:01:09,020
+And how does it actually work?
+
+15
+00:01:09,567 --> 00:01:12,144
+You never start containers yourself.
+
+16
+00:01:12,144 --> 00:01:17,371
+You describe the desired state in YAML files and send them to Kubernetes:
+
+17
+00:01:19,133 --> 00:01:19,277
+2.
+
+18
+00:01:19,277 --> 00:01:20,503
+Simulate a crash:
+
+19
+00:01:20,503 --> 00:01:26,558
+docker kill stops the container abruptly, as a crash or an out-of-memory kill would.
+
+20
+00:01:28,300 --> 00:01:31,210
+How do I see what Kubernetes did?
+
+21
+00:01:31,767 --> 00:01:37,237
+Exit code 137 means the process was killed (128 + signal 9).
+
+22
+00:01:37,237 --> 00:01:39,517
+The restart policy is no:
+
+23
+00:01:39,517 --> 00:01:46,811
+Docker was never told what the container should be doing, only to start it once.
+
+24
+00:01:48,567 --> 00:01:50,328
+Let me try something.
+
+25
+00:01:50,328 --> 00:01:51,502
+Scale by hand:
+
+26
+00:01:51,502 --> 00:01:55,611
+a second copy of the web server on the same port.
+
+27
+00:01:56,167 --> 00:01:57,665
+What should happen?
+
+28
+00:01:57,665 --> 00:02:00,266
+Two copies serving the same site.
+
+29
+00:02:00,266 --> 00:02:01,370
+What happened?
+
+30
+00:02:01,370 --> 00:02:03,420
+port is already allocated:
+
+31
+00:02:03,420 --> 00:02:06,337
+a host port belongs to one container.
+
+32
+00:02:06,337 --> 00:02:10,594
+With plain Docker you would pick a second port (8081),
+
+33
+00:02:10,594 --> 00:02:19,266
+then put a load balancer in front, then keep a list of which copy runs where, and update it whenever one dies.
+
+34
+00:02:21,000 --> 00:02:21,713
+Got it.
+
+35
+00:02:21,713 --> 00:02:24,465
+What do I need to remember?
+
+36
+00:02:25,000 --> 00:02:31,350
+Docker runs containers; Kubernetes manages containerized applications across machines.
+
+37
+00:02:31,900 --> 00:02:38,435
+You describe the desired state; Kubernetes reconciles reality with it, continuously.
+
+38
+00:02:39,000 --> 00:02:46,010
+Self-healing, scaling, one address for many copies and zero-downtime updates are what you get.
+
+39
+00:02:47,767 --> 00:02:51,574
+I keep hearing about Kubernetes architecture.
+
+40
+00:02:51,574 --> 00:02:53,181
+What is it, really?
+
+41
+00:02:53,733 --> 00:03:00,043
+A Kubernetes cluster is a group of machines (nodes) with one "brain", the control plane.
+
+42
+00:03:00,043 --> 00:03:07,141
+The control plane stores what you want, decides where things run and corrects anything that drifts.
+
+43
+00:03:07,141 --> 00:03:09,794
+The worker nodes run your containers.
+
+44
+00:03:09,794 --> 00:03:16,032
+Every component is a separate program with one job, and they all talk through one door:
+
+45
+00:03:16,032 --> 00:03:17,108
+the API server.
+
+46
+00:03:17,667 --> 00:03:23,703
+When something goes wrong in Kubernetes, the symptom tells you which component to look at,
+
+47
+00:03:23,703 --> 00:03:26,386
+but only if you know what each one does.
+
+48
+00:03:26,386 --> 00:03:31,416
+A Pod that stays Pending forever, a Pod that is scheduled but never starts,
+
+49
+00:03:31,416 --> 00:03:34,166
+a cluster where nothing changes any more:
+
+50
+00:03:34,166 --> 00:03:36,648
+each points at a different component.
+
+51
+00:03:36,648 --> 00:03:38,526
+This lesson builds that map.
+
+52
+00:03:40,267 --> 00:03:42,686
+And how does it actually work?
+
+53
+00:03:43,233 --> 00:03:52,379
+| Component | Where | Its one job (beginner version) | |---|---|---| | API server (kube-apiserver) | control plane | the front door:
+
+54
+00:03:52,379 --> 00:03:59,239
+every command (kubectl), every component, talks only to it | | etcd | control plane | the database:
+
+55
+00:03:59,239 --> 00:04:16,145
+stores the desired and current state of every object | | Scheduler (kube-scheduler) | control plane | picks a node for every new Pod that has none | | Controller manager (kube-controller-manager) | control plane | runs the reconciliation loops:
+
+56
+00:04:16,145 --> 00:04:21,826
+"3 copies wanted, 2 running → create 1" | | kubelet | every node | the node agent:
+
+57
+00:04:21,826 --> 00:04:41,088
+starts the Pod's containers, reports their status | | kube-proxy | every node | makes Service addresses (lesson 10) work on the node | | Container runtime (containerd) | every node | actually runs containers (what Docker did on your laptop) | What happens when you create a Pod:
+
+58
+00:04:42,833 --> 00:04:43,015
+2.
+
+59
+00:04:43,015 --> 00:04:43,834
+The node:
+
+60
+00:04:43,834 --> 00:04:53,024
+One node, Ready, with the role control-plane, running Kubernetes v1.37.0 with the containerd runtime.
+
+61
+00:04:53,024 --> 00:04:53,206
+3.
+
+62
+00:04:53,206 --> 00:04:58,028
+The components, as Pods in the kube-system namespace:
+
+63
+00:04:58,567 --> 00:05:06,678
+One node, Ready, with the role control-plane, running Kubernetes v1.37.0 with the containerd runtime.
+
+64
+00:05:06,678 --> 00:05:06,838
+3.
+
+65
+00:05:06,838 --> 00:05:11,095
+The components, as Pods in the kube-system namespace:
+
+66
+00:05:11,095 --> 00:05:17,600
+The four control-plane components end in -minikube (the node they are pinned to).
+
+67
+00:05:17,600 --> 00:05:27,959
+kube-proxy and calico-node run on every node; coredns is the cluster's DNS (lesson 10); calico is the network plugin (lesson 21).
+
+68
+00:05:27,959 --> 00:05:28,120
+4.
+
+69
+00:05:28,120 --> 00:05:32,136
+The static Pod files that start the control plane,
+
+70
+00:05:32,136 --> 00:05:37,516
+on the node (minikube ssh runs a command inside the Minikube node):
+
+71
+00:05:38,067 --> 00:05:44,292
+The four control-plane components end in -minikube (the node they are pinned to).
+
+72
+00:05:44,292 --> 00:05:54,206
+kube-proxy and calico-node run on every node; coredns is the cluster's DNS (lesson 10); calico is the network plugin (lesson 21).
+
+73
+00:05:54,206 --> 00:05:54,359
+4.
+
+74
+00:05:54,359 --> 00:05:58,202
+The static Pod files that start the control plane,
+
+75
+00:05:58,202 --> 00:06:03,351
+on the node (minikube ssh runs a command inside the Minikube node):
+
+76
+00:06:05,100 --> 00:06:08,010
+How do I see what Kubernetes did?
+
+77
+00:06:08,567 --> 00:06:14,471
+Ask the API server whether it is healthy, and how many kinds of objects it knows:
+
+78
+00:06:16,233 --> 00:06:17,992
+Let me try something.
+
+79
+00:06:17,992 --> 00:06:22,346
+⚠️ This breaks a control-plane component on purpose.
+
+80
+00:06:22,346 --> 00:06:25,863
+Do it only on your local Minikube cluster.
+
+81
+00:06:26,400 --> 00:06:28,215
+What should happen?
+
+82
+00:06:28,215 --> 00:06:29,456
+The Pod runs.
+
+83
+00:06:29,456 --> 00:06:30,793
+What happened?
+
+84
+00:06:30,793 --> 00:06:33,849
+It is Pending, with NODE <none>:
+
+85
+00:06:33,849 --> 00:06:35,855
+nobody picked a node.
+
+86
+00:06:37,600 --> 00:06:42,499
+Put the static Pod file back; the kubelet starts the scheduler again,
+
+87
+00:06:42,499 --> 00:06:45,410
+and the scheduler places the waiting Pod:
+
+88
+00:06:47,167 --> 00:06:47,880
+Got it.
+
+89
+00:06:47,880 --> 00:06:50,631
+What do I need to remember?
+
+90
+00:06:51,167 --> 00:06:52,656
+Control plane:
+
+91
+00:06:52,656 --> 00:07:02,121
+API server (front door), etcd (state), scheduler (where), controller manager (reconcile).
+
+92
+00:07:02,667 --> 00:07:03,693
+Every node:
+
+93
+00:07:03,693 --> 00:07:12,281
+kubelet (start containers), kube-proxy (Service networking), container runtime (containerd).
+
+94
+00:07:12,833 --> 00:07:18,428
+Components watch the API server and act; a missing component stops one step:
+
+95
+00:07:18,428 --> 00:07:20,858
+Pending without node → scheduler.
+
+96
+00:07:22,600 --> 00:07:25,440
+How does installing Minikube work?
+
+97
+00:07:26,000 --> 00:07:30,541
+Minikube creates a real Kubernetes cluster on your computer:
+
+98
+00:07:30,541 --> 00:07:33,871
+one node, running inside a Docker container.
+
+99
+00:07:33,871 --> 00:07:41,288
+It is the same Kubernetes as in production (the same API server, scheduler, kubelet…), just small.
+
+100
+00:07:41,288 --> 00:07:48,630
+kubectl is the command-line client you use to talk to any Kubernetes cluster, including this one.
+
+101
+00:07:49,167 --> 00:07:57,233
+You learn Kubernetes by using it, and you need a cluster you can break without consequences,
+
+102
+00:07:57,233 --> 00:08:01,793
+without a cloud account and without paying anything.
+
+103
+00:08:01,793 --> 00:08:07,492
+Minikube is that cluster; every lesson of this course runs on it.
+
+104
+00:08:07,492 --> 00:08:14,770
+> ⚠️ Do not run the commands of this course against a production or shared cluster.
+
+105
+00:08:14,770 --> 00:08:20,381
+They delete things, stop > components and break them on purpose.
+
+106
+00:08:22,133 --> 00:08:24,553
+And how does it actually work?
+
+107
+00:08:25,100 --> 00:08:32,693
+Alternatives exist (kind, k3d, Docker Desktop's Kubernetes); they all give you a local cluster.
+
+108
+00:08:32,693 --> 00:08:40,845
+This course uses Minikube everywhere, with one set of settings, so every output you see matches yours.
+
+109
+00:08:42,600 --> 00:08:42,819
+1.
+
+110
+00:08:42,819 --> 00:08:46,879
+Install Docker, Minikube and kubectl.
+
+111
+00:08:46,879 --> 00:08:47,647
+Docker:
+
+112
+00:08:47,647 --> 00:08:54,890
+Docker Desktop (Windows, macOS) or Docker Engine (Linux), running.
+
+113
+00:08:55,433 --> 00:08:57,288
+On macOS:
+
+114
+00:08:57,833 --> 00:09:01,813
+On Linux (x86-64):
+
+115
+00:09:02,367 --> 00:09:05,781
+On Windows, run the course in Git Bash.
+
+116
+00:09:05,781 --> 00:09:08,496
+One Git Bash habit to know now:
+
+117
+00:09:08,496 --> 00:09:27,495
+it rewrites arguments that look like Linux paths (/etc/hosts) into Windows paths before kubectl sees them; set export MSYS_NO_PATHCONV=1 in your Git Bash profile so kubectl exec POD -- cat /etc/hosts works as written.
+
+118
+00:09:27,495 --> 00:09:27,670
+2.
+
+119
+00:09:27,670 --> 00:09:29,071
+Check the tools:
+
+120
+00:09:30,833 --> 00:09:33,743
+How do I see what Kubernetes did?
+
+121
+00:09:34,300 --> 00:09:36,939
+Which cluster does kubectl talk to?
+
+122
+00:09:36,939 --> 00:09:40,935
+(Always check before running anything that deletes.).
+
+123
+00:09:42,700 --> 00:09:44,714
+Let me try something.
+
+124
+00:09:44,714 --> 00:09:48,935
+Stop the cluster, then use kubectl as usual:
+
+125
+00:09:49,500 --> 00:09:51,569
+What should happen?
+
+126
+00:09:51,569 --> 00:09:53,311
+A list of nodes.
+
+127
+00:09:53,311 --> 00:09:54,835
+What happened?
+
+128
+00:09:54,835 --> 00:10:01,260
+Unable to connect to the server … localhost:8080 … refused.
+
+129
+00:10:03,000 --> 00:10:04,800
+Here is the fix.
+
+130
+00:10:06,533 --> 00:10:07,247
+Got it.
+
+131
+00:10:07,247 --> 00:10:09,998
+What do I need to remember?
+
+132
+00:10:10,533 --> 00:10:18,978
+Minikube = a real one-node Kubernetes cluster inside a Docker container; kubectl = the client for any cluster.
+
+133
+00:10:19,533 --> 00:10:21,529
+The course cluster:
+
+134
+00:10:21,529 --> 00:10:28,358
+minikube start --driver=docker --cni=calico --cpus=2 --memory=4g.
+
+135
+00:10:28,900 --> 00:10:36,250
+minikube status and kubectl config current-context are the first checks when kubectl cannot connect.

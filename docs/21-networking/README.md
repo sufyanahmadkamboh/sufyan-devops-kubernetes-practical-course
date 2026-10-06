@@ -146,7 +146,7 @@ Delete one web Pod. Its replacement has a **new** IP; the Service IP and name do
 <!-- test: contains=Welcome to nginx -->
 ```bash
 kubectl get pods -n net-lab -l app=web -o jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'
-kubectl delete pod -n net-lab -l app=web --wait=false > /dev/null
+kubectl delete pod -n net-lab -l app=web > /dev/null
 kubectl rollout status deployment/web -n net-lab --timeout=120s > /dev/null
 kubectl wait --for=condition=Ready pod -n net-lab -l app=web --timeout=120s > /dev/null
 kubectl get pods -n net-lab -l app=web -o jsonpath='{range .items[*]}{.status.podIP}{"\n"}{end}'

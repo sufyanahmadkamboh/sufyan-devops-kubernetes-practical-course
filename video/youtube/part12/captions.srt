@@ -1,0 +1,583 @@
+1
+00:00:04,800 --> 00:00:07,050
+Can you show me Ingress?
+
+2
+00:00:07,600 --> 00:00:10,429
+An Ingress is a set of HTTP routing rules:
+
+3
+00:00:10,429 --> 00:00:17,637
+"requests for app.local go to the frontend Service, requests for shop.local/api go to the backend Service".
+
+4
+00:00:17,637 --> 00:00:26,596
+An ingress controller is the program (a reverse proxy running in the cluster) that reads those rules and actually routes the traffic.
+
+5
+00:00:26,596 --> 00:00:27,404
+The analogy:
+
+6
+00:00:27,404 --> 00:00:34,275
+Services are the departments of a company; the Ingress is the reception desk with one public entrance,
+
+7
+00:00:34,275 --> 00:00:40,675
+reading the visitor's request ("I am here for accounting") and sending them to the right floor.
+
+8
+00:00:41,233 --> 00:00:49,178
+Exposing every application with its own NodePort or LoadBalancer Service (lesson 10) does not scale:
+
+9
+00:00:49,178 --> 00:00:54,660
+one random high port or one paid cloud load balancer per application,
+
+10
+00:00:54,660 --> 00:00:58,712
+no host names, no shared TLS certificate, no paths.
+
+11
+00:00:58,712 --> 00:01:04,909
+Web traffic wants one entrance (ports 80/443) and rules by host name and path.
+
+12
+00:01:04,909 --> 00:01:06,498
+That is the Ingress.
+
+13
+00:01:08,233 --> 00:01:10,653
+And how does it actually work?
+
+14
+00:01:11,200 --> 00:01:14,334
+The Ingress object alone does nothing:
+
+15
+00:01:14,334 --> 00:01:17,469
+without a controller, nobody reads it.
+
+16
+00:01:17,469 --> 00:01:24,892
+A cluster can run several controllers; ingressClassName says which one handles an Ingress.
+
+17
+00:01:24,892 --> 00:01:29,924
+Minikube's addon installs ingress-nginx with the class nginx.
+
+18
+00:01:29,924 --> 00:01:37,430
+(The ingress-nginx project was retired upstream in 2026; other controllers such as Traefik,
+
+19
+00:01:37,430 --> 00:01:41,224
+and the newer Gateway API, use the same ideas:
+
+20
+00:01:41,224 --> 00:01:49,308
+host and path rules to Services.) The controller itself is reached from outside through a Service:
+
+21
+00:01:49,308 --> 00:01:52,195
+on Minikube a NodePort on the node.
+
+22
+00:01:53,933 --> 00:01:54,091
+1.
+
+23
+00:01:54,091 --> 00:01:59,468
+Install the ingress controller (Minikube's addon; once per cluster):
+
+24
+00:02:00,033 --> 00:02:00,209
+2.
+
+25
+00:02:00,209 --> 00:02:03,818
+The applications, in their own namespace:
+
+26
+00:02:04,367 --> 00:02:04,561
+3.
+
+27
+00:02:04,561 --> 00:02:06,801
+The host-based Ingress:
+
+28
+00:02:07,367 --> 00:02:07,512
+4.
+
+29
+00:02:07,512 --> 00:02:12,230
+Send requests through the controller with different Host headers.
+
+30
+00:02:12,230 --> 00:02:22,972
+The test client runs inside the cluster and calls the controller's Service; the Host header is what a browser would send for app.local or api.local:
+
+31
+00:02:22,972 --> 00:02:26,746
+One entrance, two applications, chosen by host name.
+
+32
+00:02:26,746 --> 00:02:26,891
+5.
+
+33
+00:02:28,633 --> 00:02:31,543
+How do I see what Kubernetes did?
+
+34
+00:02:32,100 --> 00:02:37,659
+How the controller understood the rules, and which Pods stand behind each Service:
+
+35
+00:02:39,400 --> 00:02:40,911
+Let me try something.
+
+36
+00:02:40,911 --> 00:02:47,100
+A colleague updates the path-based Ingress, with a typo in the backend's Service name:
+
+37
+00:02:47,633 --> 00:02:49,542
+What should happen?
+
+38
+00:02:49,542 --> 00:02:51,751
+JSON from the backend.
+
+39
+00:02:51,751 --> 00:02:53,157
+What happened?
+
+40
+00:02:53,157 --> 00:02:59,686
+503 Service Temporarily Unavailable, from the ingress controller:
+
+41
+00:02:59,686 --> 00:03:04,808
+it received the request but had nowhere to send it.
+
+42
+00:03:04,808 --> 00:03:08,223
+Which object controls the routing?
+
+43
+00:03:09,967 --> 00:03:11,766
+Here is the fix.
+
+44
+00:03:13,500 --> 00:03:14,213
+Got it.
+
+45
+00:03:14,213 --> 00:03:16,965
+What do I need to remember?
+
+46
+00:03:17,500 --> 00:03:25,435
+Ingress = HTTP routing rules (host, path → Service); the ingress controller does the routing.
+
+47
+00:03:26,000 --> 00:03:28,911
+One entrance for many applications:
+
+48
+00:03:28,911 --> 00:03:30,575
+no NodePort per app.
+
+49
+00:03:31,133 --> 00:03:39,813
+503 from the controller → a backend Service is missing or has no ready Pods; 404 → no rule matched.
+
+50
+00:03:41,567 --> 00:03:45,294
+I keep hearing about Kubernetes networking.
+
+51
+00:03:45,294 --> 00:03:46,941
+What is it, really?
+
+52
+00:03:47,500 --> 00:03:52,857
+The Kubernetes networking model is a short list of promises every cluster keeps,
+
+53
+00:03:52,857 --> 00:03:54,999
+whatever network plugin it uses:
+
+54
+00:03:55,533 --> 00:03:59,891
+Every "it cannot connect" problem is one of these four paths.
+
+55
+00:03:59,891 --> 00:04:06,179
+Knowing which path a request takes, and which part of the cluster is responsible for it,
+
+56
+00:04:06,179 --> 00:04:09,179
+turns guessing into a short investigation:
+
+57
+00:04:09,179 --> 00:04:15,538
+is it the Pod, the Service, DNS, a NetworkPolicy (lesson 22), or the way in from outside?
+
+58
+00:04:17,300 --> 00:04:19,720
+And how does it actually work?
+
+59
+00:04:20,267 --> 00:04:46,366
+| Piece | What it does | Where | |---|---|---| | CNI plugin (Calico here) | gives every Pod an IP from the Pod network (10.244.x.x) and routes between them | a DaemonSet (calico-node) | | kube-proxy | turns every Service IP into rules that forward to the Pods behind it | a DaemonSet on every node | | CoreDNS | answers names:
+
+60
+00:04:46,366 --> 00:04:58,214
+web → the Service IP; web.net-lab.svc.cluster.local | Pods in kube-system | | NodePort / LoadBalancer / Ingress | the doors from outside | Services,
+
+61
+00:04:58,214 --> 00:05:09,022
+ingress controller (lesson 20) | Each Pod's /etc/resolv.conf points at CoreDNS and lists search domains (<namespace>.svc.cluster.local,
+
+62
+00:05:09,022 --> 00:05:14,706
+…), so a short name like web is completed with the Pod's own namespace.
+
+63
+00:05:16,467 --> 00:05:16,804
+1.
+
+64
+00:05:16,804 --> 00:05:17,986
+Deploy:
+
+65
+00:05:18,533 --> 00:05:18,710
+2.
+
+66
+00:05:18,710 --> 00:05:19,596
+Pod → Pod.
+
+67
+00:05:19,596 --> 00:05:26,148
+Every Pod has its own IP; a client Pod reaches one of them directly by IP:
+
+68
+00:05:26,700 --> 00:05:26,896
+3.
+
+69
+00:05:26,896 --> 00:05:29,146
+Pod → Service, by name.
+
+70
+00:05:29,146 --> 00:05:34,919
+The Service has its own stable IP; DNS maps the name to it:
+
+71
+00:05:35,467 --> 00:05:35,682
+4.
+
+72
+00:05:35,682 --> 00:05:38,480
+DNS settings inside a Pod:
+
+73
+00:05:38,480 --> 00:05:47,521
+10.96.0.10 is CoreDNS's Service; the first search domain is the Pod's own namespace.
+
+74
+00:05:47,521 --> 00:05:47,737
+5.
+
+75
+00:05:47,737 --> 00:05:49,351
+Pod → Internet:
+
+76
+00:05:51,100 --> 00:05:54,009
+How do I see what Kubernetes did?
+
+77
+00:05:54,567 --> 00:06:00,186
+Which Pod IPs stand behind the Service (kube-proxy forwards to these):
+
+78
+00:06:01,933 --> 00:06:03,586
+Let me try something.
+
+79
+00:06:03,586 --> 00:06:07,913
+A client in another namespace uses the same short name:
+
+80
+00:06:08,467 --> 00:06:10,234
+What should happen?
+
+81
+00:06:10,234 --> 00:06:11,444
+The web page.
+
+82
+00:06:11,444 --> 00:06:12,746
+What happened?
+
+83
+00:06:12,746 --> 00:06:14,421
+bad address 'web':
+
+84
+00:06:14,421 --> 00:06:20,003
+the name did not resolve, so the request never left the Pod.
+
+85
+00:06:20,003 --> 00:06:21,956
+It is a DNS question.
+
+86
+00:06:23,700 --> 00:06:33,505
+Use the name with the namespace (web.net-lab), or the full name (web.net-lab.svc.cluster.local):
+
+87
+00:06:35,267 --> 00:06:35,980
+Got it.
+
+88
+00:06:35,980 --> 00:06:38,731
+What do I need to remember?
+
+89
+00:06:39,267 --> 00:06:45,391
+Every Pod has an IP and reaches every other Pod directly; Pod IPs change.
+
+90
+00:06:45,933 --> 00:06:52,478
+Services give a stable IP and DNS name; kube-proxy forwards to the ready Pods.
+
+91
+00:06:53,033 --> 00:06:59,723
+Short names resolve in the Pod's own namespace; use name.namespace across namespaces.
+
+92
+00:07:01,467 --> 00:07:04,111
+How does NetworkPolicies work?
+
+93
+00:07:04,667 --> 00:07:07,970
+A NetworkPolicy is a firewall rule for Pods:
+
+94
+00:07:07,970 --> 00:07:13,301
+"the database accepts connections only from the backend, on port 5432".
+
+95
+00:07:13,301 --> 00:07:20,809
+It selects Pods by label and lists who may talk to them (ingress) or whom they may talk to (egress).
+
+96
+00:07:20,809 --> 00:07:21,710
+The analogy:
+
+97
+00:07:21,710 --> 00:07:26,064
+by default every office in the building has its door open.
+
+98
+00:07:26,064 --> 00:07:28,617
+NetworkPolicies are badge readers:
+
+99
+00:07:28,617 --> 00:07:32,671
+once a door has one, only the badges listed may enter.
+
+100
+00:07:33,233 --> 00:07:37,001
+Lesson 21's model says every Pod can reach every Pod.
+
+101
+00:07:37,001 --> 00:07:39,346
+That is convenient and dangerous:
+
+102
+00:07:39,346 --> 00:07:44,606
+if an attacker takes over the frontend (the part exposed to the Internet),
+
+103
+00:07:44,606 --> 00:07:47,592
+they can connect straight to the database.
+
+104
+00:07:47,592 --> 00:07:51,146
+NetworkPolicies enforce the architecture you drew:
+
+105
+00:07:51,146 --> 00:07:54,558
+frontend → backend → database, and nothing else.
+
+106
+00:07:56,300 --> 00:07:58,720
+And how does it actually work?
+
+107
+00:07:59,267 --> 00:08:04,525
+A Pod is isolated for ingress as soon as any policy with policyTypes:
+
+108
+00:08:04,525 --> 00:08:06,125
+[Ingress] selects it.
+
+109
+00:08:06,125 --> 00:08:10,545
+From then on, only traffic allowed by some policy gets in.
+
+110
+00:08:10,545 --> 00:08:13,365
+Pods selected by no policy stay open.
+
+111
+00:08:13,365 --> 00:08:17,556
+Policies only add permissions; there is no "deny" rule.
+
+112
+00:08:19,300 --> 00:08:19,493
+1.
+
+113
+00:08:19,493 --> 00:08:21,710
+Deploy the three tiers:
+
+114
+00:08:22,267 --> 00:08:22,417
+2.
+
+115
+00:08:22,417 --> 00:08:25,266
+Before any policy, everything is open.
+
+116
+00:08:25,266 --> 00:08:26,616
+From the frontend:
+
+117
+00:08:26,616 --> 00:08:32,989
+the backend answers, the backend reaches the database (/readyz says ready only then),
+
+118
+00:08:32,989 --> 00:08:37,338
+and the frontend can also open the database port directly:
+
+119
+00:08:37,338 --> 00:08:39,587
+That last line is the problem:
+
+120
+00:08:39,587 --> 00:08:43,936
+the frontend should never be able to talk to the database.
+
+121
+00:08:43,936 --> 00:08:44,086
+3.
+
+122
+00:08:44,633 --> 00:08:46,791
+That last line is the problem:
+
+123
+00:08:46,791 --> 00:08:50,962
+the frontend should never be able to talk to the database.
+
+124
+00:08:50,962 --> 00:08:51,106
+3.
+
+125
+00:08:51,106 --> 00:08:52,329
+Close every door:
+
+126
+00:08:52,329 --> 00:08:52,473
+4.
+
+127
+00:08:52,473 --> 00:08:55,853
+Open exactly the two paths of the architecture:
+
+128
+00:08:56,400 --> 00:08:56,552
+4.
+
+129
+00:08:56,552 --> 00:09:00,135
+Open exactly the two paths of the architecture:
+
+130
+00:09:01,900 --> 00:09:04,809
+How do I see what Kubernetes did?
+
+131
+00:09:05,367 --> 00:09:07,601
+describe spells the rule out:
+
+132
+00:09:07,601 --> 00:09:11,991
+which Pods it applies to, who may connect, on which port.
+
+133
+00:09:13,733 --> 00:09:15,400
+Let me try something.
+
+134
+00:09:15,400 --> 00:09:18,733
+A colleague "tidies up" the frontend rule:
+
+135
+00:09:19,267 --> 00:09:20,915
+What should happen?
+
+136
+00:09:20,915 --> 00:09:21,436
+ready.
+
+137
+00:09:21,436 --> 00:09:22,651
+What happened?
+
+138
+00:09:22,651 --> 00:09:23,518
+A timeout:
+
+139
+00:09:23,518 --> 00:09:30,373
+no answer at all, the signature of dropped packets, so suspect a NetworkPolicy.
+
+140
+00:09:30,373 --> 00:09:35,406
+Which policies select the backend, and whom do they allow?
+
+141
+00:09:37,167 --> 00:09:38,966
+Here is the fix.
+
+142
+00:09:40,700 --> 00:09:41,413
+Got it.
+
+143
+00:09:41,413 --> 00:09:44,164
+What do I need to remember?
+
+144
+00:09:44,700 --> 00:09:52,324
+NetworkPolicies are label-based firewall rules for Pods; selected Pods accept only what some policy allows.
+
+145
+00:09:52,867 --> 00:09:58,396
+Default-deny first, then explicit allow rules for the paths of the architecture.
+
+146
+00:09:58,933 --> 00:10:03,918
+A blocked connection usually times out; check policies and labels.

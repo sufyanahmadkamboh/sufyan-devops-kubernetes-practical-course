@@ -102,10 +102,10 @@ kubectl get endpointslices -l kubernetes.io/service-name=backend-service
 ```
 
 ```text
-NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-backend-service   ClusterIP   10.108.94.241   <none>        80/TCP    1s
-NAME                    ADDRESSTYPE   PORTS   ENDPOINTS                       AGE
-backend-service-8cjfj   IPv4          8080    10.244.120.103,10.244.120.105   2s
+NAME              TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+backend-service   ClusterIP   10.110.3.4   <none>        80/TCP    1s
+NAME                    ADDRESSTYPE   PORTS   ENDPOINTS                      AGE
+backend-service-tbl9s   IPv4          8080    10.244.120.121,10.244.120.84   1s
 ```
 
 The Service has a stable `CLUSTER-IP`; its EndpointSlice lists the two Pods' IPs, on port 8080.
@@ -132,8 +132,7 @@ kubectl logs frontend --tail=30 | grep -o '"pod":"[^"]*"' | sort | uniq -c
 ```
 
 ```text
-      2 "pod":"backend-6668bd5576-dvfgx"
-      2 "pod":"backend-6668bd5576-pknng"
+      1 "pod":"backend-6668bd5576-h5pf2"
 ```
 
 Usually both Pods appear: the Service spreads requests over its endpoints.
@@ -149,14 +148,14 @@ kubectl run dns --rm -i --quiet --restart=Never --image=busybox:1.37 -- sh -c 'n
 Server:		10.96.0.10
 Address:	10.96.0.10:53
 Name:	backend-service.services-lab.svc.cluster.local
-Address: 10.108.94.241
+Address: 10.110.3.4
 search services-lab.svc.cluster.local svc.cluster.local cluster.local
 nameserver 10.96.0.10
 warning: couldn't attach to pod/dns, falling back to streaming logs: unable to upgrade connection: container dns not found in pod dns_services-lab
 Server:		10.96.0.10
 Address:	10.96.0.10:53
 Name:	backend-service.services-lab.svc.cluster.local
-Address: 10.108.94.241
+Address: 10.110.3.4
 search services-lab.svc.cluster.local svc.cluster.local cluster.local
 nameserver 10.96.0.10
 ```
@@ -260,7 +259,7 @@ kubectl get endpointslices -l kubernetes.io/service-name=backend-service
 
 ```text
 NAME                    ADDRESSTYPE   PORTS     ENDPOINTS   AGE
-backend-service-8cjfj   IPv4          <unset>   <unset>     31s
+backend-service-tbl9s   IPv4          <unset>   <unset>     37s
 ```
 
 No endpoints: the selector matches no ready Pod. Compare the selector with the Pods' labels:
@@ -320,7 +319,7 @@ short name `backend-service` does **not** work there.
 <!-- test: contains=bad address; contains=Hello from the backend -->
 ```bash
 kubectl create namespace clients
-kubectl run c -n clients --rm -i --quiet --restart=Never --image=busybox:1.37 -- sh -c 'wget -qO- -T 5 http://backend-service/; echo; wget -qO- -T 5 http://backend-service.services-lab/' 2>&1 | grep -v deleted
+kubectl run c -n clients --rm -i --quiet --restart=Never --image=busybox:1.37 -- sh -c 'sleep 2; wget -qO- -T 5 http://backend-service/; echo; wget -qO- -T 5 http://backend-service.services-lab/' 2>&1 | grep -v deleted
 ```
 
 </details>

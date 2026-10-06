@@ -1,0 +1,2 @@
+0:00 04 · kubectl fundamentals
+4:22 05 · Namespaces

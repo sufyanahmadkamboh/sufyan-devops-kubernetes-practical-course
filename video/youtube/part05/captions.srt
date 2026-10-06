@@ -1,0 +1,195 @@
+1
+00:00:04,800 --> 00:00:09,470
+Can you show me Services, service discovery and DNS?
+
+2
+00:00:10,033 --> 00:00:14,562
+A Service gives a group of Pods one stable address and name,
+
+3
+00:00:14,562 --> 00:00:18,487
+and spreads the traffic sent to it over all of them.
+
+4
+00:00:18,487 --> 00:00:23,318
+The Pods behind it are chosen with a label selector (lesson 07).
+
+5
+00:00:23,318 --> 00:00:29,130
+Kubernetes' DNS turns the Service's name (backend-service) into that address,
+
+6
+00:00:29,130 --> 00:00:32,149
+so applications call each other by name.
+
+7
+00:00:32,149 --> 00:00:32,753
+Analogy:
+
+8
+00:00:32,753 --> 00:00:35,093
+a company's switchboard number.
+
+9
+00:00:35,633 --> 00:00:36,891
+Pod IPs change.
+
+10
+00:00:36,891 --> 00:00:46,116
+Every Pod gets a new IP when it is recreated (a crash, a rolling update, scaling), and there are several Pods.
+
+11
+00:00:46,116 --> 00:00:51,148
+A frontend cannot keep a list of backend Pod IPs up to date.
+
+12
+00:00:52,900 --> 00:00:55,319
+And how does it actually work?
+
+13
+00:00:55,867 --> 00:01:04,187
+The Service's selector finds the Pods; only ready Pods (readiness probe, lesson 14) receive traffic.
+
+14
+00:01:04,187 --> 00:01:11,177
+The list of current Pod addresses is stored in EndpointSlices, updated continuously.
+
+15
+00:01:11,177 --> 00:01:11,676
+Types:
+
+16
+00:01:11,676 --> 00:01:22,992
+| Type | Reachable from | Use | |---|---|---| | ClusterIP (default) | inside the cluster only | service-to-service traffic (the backend,
+
+17
+00:01:22,992 --> 00:01:26,736
+the database) | | NodePort | every node's IP,
+
+18
+00:01:26,736 --> 00:01:30,647
+on a port 30000–32767 | simple external access,
+
+19
+00:01:30,647 --> 00:01:44,210
+tests, labs | | LoadBalancer | an external load balancer the cloud creates | public services in the cloud (Minikube simulates it with minikube tunnel) | DNS names:
+
+20
+00:01:44,210 --> 00:01:51,532
+backend-service (same namespace), backend-service.services-lab (from another namespace),
+
+21
+00:01:51,532 --> 00:01:56,441
+backend-service.services-lab.svc.cluster.local (full name).
+
+22
+00:01:58,200 --> 00:01:58,363
+1.
+
+23
+00:01:58,363 --> 00:02:00,644
+The backend and its Service:
+
+24
+00:02:01,200 --> 00:02:01,363
+1.
+
+25
+00:02:01,363 --> 00:02:03,644
+The backend and its Service:
+
+26
+00:02:04,200 --> 00:02:12,858
+The Service has a stable CLUSTER-IP; its EndpointSlice lists the two Pods' IPs, on port 8080.
+
+27
+00:02:12,858 --> 00:02:13,044
+2.
+
+28
+00:02:13,044 --> 00:02:14,720
+Service discovery:
+
+29
+00:02:14,720 --> 00:02:19,374
+the frontend calls http://backend-service by name.
+
+30
+00:02:19,933 --> 00:02:28,591
+The Service has a stable CLUSTER-IP; its EndpointSlice lists the two Pods' IPs, on port 8080.
+
+31
+00:02:28,591 --> 00:02:28,777
+2.
+
+32
+00:02:28,777 --> 00:02:30,453
+Service discovery:
+
+33
+00:02:30,453 --> 00:02:35,108
+the frontend calls http://backend-service by name.
+
+34
+00:02:36,867 --> 00:02:39,776
+How do I see what Kubernetes did?
+
+35
+00:02:40,333 --> 00:02:43,686
+Pod IPs change, the Service does not.
+
+36
+00:02:43,686 --> 00:02:46,948
+Delete the backend Pods and compare:
+
+37
+00:02:48,700 --> 00:02:50,200
+Let me try something.
+
+38
+00:02:50,200 --> 00:02:54,630
+A colleague "tidies up" the Service and mistypes its selector:
+
+39
+00:02:55,167 --> 00:02:56,918
+What should happen?
+
+40
+00:02:56,918 --> 00:02:59,315
+The frontend gets answers.
+
+41
+00:02:59,315 --> 00:03:00,606
+What happened?
+
+42
+00:03:00,606 --> 00:03:03,371
+backend-service not reachable.
+
+43
+00:03:03,371 --> 00:03:05,676
+Which object controls it?
+
+44
+00:03:07,433 --> 00:03:09,233
+Here is the fix.
+
+45
+00:03:10,967 --> 00:03:11,680
+Got it.
+
+46
+00:03:11,680 --> 00:03:14,431
+What do I need to remember?
+
+47
+00:03:14,967 --> 00:03:21,851
+A Service gives Pods a stable IP and DNS name and spreads traffic over the ready Pods it selects.
+
+48
+00:03:22,400 --> 00:03:30,005
+port is what clients call, targetPort is where the Pods listen; EndpointSlices show where traffic goes.
+
+49
+00:03:30,567 --> 00:03:37,541
+ClusterIP for inside, NodePort for simple external access, LoadBalancer in the cloud.

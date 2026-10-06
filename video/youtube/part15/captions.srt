@@ -1,0 +1,399 @@
+1
+00:00:04,800 --> 00:00:08,020
+Can you show me troubleshooting Kubernetes?
+
+2
+00:00:08,567 --> 00:00:15,829
+Troubleshooting is finding out why the cluster does not do what you asked, with a method instead of guesses.
+
+3
+00:00:15,829 --> 00:00:19,730
+Kubernetes is unusually good at telling you what is wrong:
+
+4
+00:00:19,730 --> 00:00:24,034
+every object has a status, every important step leaves an event,
+
+5
+00:00:24,034 --> 00:00:28,741
+every container keeps its logs, and you can step inside a running Pod.
+
+6
+00:00:28,741 --> 00:00:32,103
+The skill is knowing which of these to read first.
+
+7
+00:00:32,103 --> 00:00:34,592
+A doctor does not start with surgery:
+
+8
+00:00:34,592 --> 00:00:40,711
+they ask what hurts, take your temperature, look at the test results, and only then decide.
+
+9
+00:00:41,267 --> 00:00:43,009
+Something always breaks:
+
+10
+00:00:43,009 --> 00:00:46,784
+a typo in a label, an image tag that does not exist,
+
+11
+00:00:46,784 --> 00:00:51,286
+a memory limit that is too small, a policy that blocks a port.
+
+12
+00:00:51,286 --> 00:00:56,658
+Copying the error text into a search engine finds other people's problems.
+
+13
+00:00:56,658 --> 00:01:02,321
+Following the same questions every time finds yours, usually in a few minutes.
+
+14
+00:01:04,067 --> 00:01:06,486
+And how does it actually work?
+
+15
+00:01:07,033 --> 00:01:10,288
+The troubleshooting mindset, in order:
+
+16
+00:01:12,033 --> 00:01:12,182
+1.
+
+17
+00:01:12,182 --> 00:01:15,083
+Create the crashing Pod and look at it:
+
+18
+00:01:15,633 --> 00:01:15,788
+2.
+
+19
+00:01:15,788 --> 00:01:16,331
+Events.
+
+20
+00:01:16,331 --> 00:01:23,003
+Every namespace keeps a short history of what happened to its objects (about an hour).
+
+21
+00:01:23,567 --> 00:01:23,722
+2.
+
+22
+00:01:23,722 --> 00:01:24,265
+Events.
+
+23
+00:01:24,265 --> 00:01:30,936
+Every namespace keeps a short history of what happened to its objects (about an hour).
+
+24
+00:01:31,500 --> 00:01:38,364
+Only the warnings, across all namespaces, is a good habit when you do not know where to look yet:
+
+25
+00:01:40,100 --> 00:01:43,009
+How do I see what Kubernetes did?
+
+26
+00:01:43,567 --> 00:01:46,866
+The exit code tells you how a container ended:
+
+27
+00:01:48,600 --> 00:01:50,279
+Let me try something.
+
+28
+00:01:50,279 --> 00:01:53,077
+The backend container has no shell:
+
+29
+00:01:53,077 --> 00:01:57,794
+its image is "distroless" (only the program, nothing else).
+
+30
+00:01:58,333 --> 00:02:00,002
+What should happen?
+
+31
+00:02:00,002 --> 00:02:01,319
+A process list.
+
+32
+00:02:01,319 --> 00:02:02,548
+What happened?
+
+33
+00:02:02,548 --> 00:02:02,988
+exec:
+
+34
+00:02:02,988 --> 00:02:03,427
+"sh":
+
+35
+00:02:03,427 --> 00:02:05,710
+executable file not found:
+
+36
+00:02:05,710 --> 00:02:10,628
+kubectl reached the container, but there is no sh in it.
+
+37
+00:02:10,628 --> 00:02:16,160
+kubectl exec can only run programs that exist inside the image,
+
+38
+00:02:16,160 --> 00:02:23,097
+and minimal images (distroless, scratch) have no shell, ps or wget, on purpose:
+
+39
+00:02:23,097 --> 00:02:26,434
+fewer programs, fewer vulnerabilities.
+
+40
+00:02:26,434 --> 00:02:29,508
+Which programs does the image have?
+
+41
+00:02:31,267 --> 00:02:37,415
+kubectl debug adds an ephemeral container to the running Pod, from any image you choose.
+
+42
+00:02:37,415 --> 00:02:42,026
+With --target, it shares the target container's process namespace,
+
+43
+00:02:42,026 --> 00:02:46,776
+so it sees the backend's processes, and it shares the Pod's network:
+
+44
+00:02:48,533 --> 00:02:49,247
+Got it.
+
+45
+00:02:49,247 --> 00:02:51,998
+What do I need to remember?
+
+46
+00:02:52,533 --> 00:02:53,072
+Method:
+
+47
+00:02:53,072 --> 00:03:01,303
+what is broken → expected vs actual → which object → describe/events → logs → configuration → fix → verify.
+
+48
+00:03:01,867 --> 00:03:10,721
+Events (kubectl get events --sort-by=.lastTimestamp, describe) explain most problems at once.
+
+49
+00:03:11,267 --> 00:03:19,331
+kubectl logs --previous for crashes, -c for multi-container Pods; exit codes tell how a container ended.
+
+50
+00:03:21,067 --> 00:03:23,571
+I keep hearing about Helm.
+
+51
+00:03:23,571 --> 00:03:25,401
+What is it, really?
+
+52
+00:03:25,967 --> 00:03:28,946
+Helm is the package manager of Kubernetes.
+
+53
+00:03:28,946 --> 00:03:41,431
+A chart is a folder of YAML templates plus a file of default settings (values.yaml); Helm fills the templates with the values and applies the result to the cluster as one unit,
+
+54
+00:03:41,431 --> 00:03:42,141
+a release.
+
+55
+00:03:42,141 --> 00:03:48,738
+Every change to a release is numbered (a revision), so you can see the history and roll back.
+
+56
+00:03:48,738 --> 00:03:55,974
+If raw YAML files are a recipe written out for exactly four people, a chart is the recipe with blanks:
+
+57
+00:03:55,974 --> 00:03:56,471
+"flour:
+
+58
+00:03:56,471 --> 00:03:58,031
+{{ guests × 100 }} g".
+
+59
+00:03:58,567 --> 00:04:02,191
+By now the course application is a dozen YAML files:
+
+60
+00:04:02,191 --> 00:04:05,816
+Deployments, Services, a ConfigMap, a Secret, a PVC.
+
+61
+00:04:05,816 --> 00:04:12,229
+Running it in dev and test means copying all of them and changing a few values in each copy,
+
+62
+00:04:12,229 --> 00:04:15,017
+then keeping the copies in sync forever.
+
+63
+00:04:15,017 --> 00:04:20,733
+Helm replaces the copies with one chart and one small values file per environment,
+
+64
+00:04:20,733 --> 00:04:27,006
+installs and upgrades everything in one command, and remembers each version for rollbacks.
+
+65
+00:04:28,767 --> 00:04:31,186
+And how does it actually work?
+
+66
+00:04:31,733 --> 00:04:35,529
+| Word | Meaning | |---|---| | chart | the package:
+
+67
+00:04:35,529 --> 00:04:43,045
+templates + default values + metadata | | values | the settings that fill the templates (values.yaml,
+
+68
+00:04:43,045 --> 00:04:48,105
+-f file, --set key=value) | | release | one installation of a chart,
+
+69
+00:04:48,105 --> 00:04:53,686
+with a name (shop), in a namespace | | revision | one version of a release:
+
+70
+00:04:53,686 --> 00:04:57,333
+install = 1, each upgrade or rollback adds one |.
+
+71
+00:04:59,067 --> 00:05:06,281
+The course chart, helm/learning-app, follows the same layout with templates for the course application.
+
+72
+00:05:06,281 --> 00:05:06,421
+3.
+
+73
+00:05:06,421 --> 00:05:10,273
+Check and preview the chart before installing anything:
+
+74
+00:05:10,273 --> 00:05:14,685
+lint finds mistakes, template prints the YAML Helm would apply:
+
+75
+00:05:14,685 --> 00:05:14,825
+4.
+
+76
+00:05:14,825 --> 00:05:16,506
+Install the dev release:
+
+77
+00:05:17,067 --> 00:05:17,260
+4.
+
+78
+00:05:17,260 --> 00:05:19,576
+Install the dev release:
+
+79
+00:05:20,133 --> 00:05:20,340
+5.
+
+80
+00:05:20,340 --> 00:05:22,924
+Upgrade to backend 2.0.0.
+
+81
+00:05:22,924 --> 00:05:27,678
+--set overrides one value on top of the files:
+
+82
+00:05:28,233 --> 00:05:28,446
+6.
+
+83
+00:05:28,446 --> 00:05:30,678
+History and rollback:
+
+84
+00:05:32,433 --> 00:05:35,343
+How do I see what Kubernetes did?
+
+85
+00:05:35,900 --> 00:05:38,131
+What Helm knows about a release:
+
+86
+00:05:38,131 --> 00:05:42,174
+the values it was installed with, and the YAML it applied:
+
+87
+00:05:43,933 --> 00:05:45,491
+Let me try something.
+
+88
+00:05:45,491 --> 00:05:50,833
+Release a backend version that does not exist, and let Helm wait for it:
+
+89
+00:05:51,367 --> 00:05:56,125
+What should happen?
+
+90
+00:05:56,125 --> 00:06:01,384
+Revision 4, deployed.
+
+91
+00:06:01,384 --> 00:06:04,890
+What happened?
+
+92
+00:06:04,890 --> 00:06:08,646
+UPGRADE FAILED.
+
+93
+00:06:10,400 --> 00:06:17,490
+Roll back to the last good revision; the fix of the release itself (building 9.9.9,
+
+94
+00:06:17,490 --> 00:06:20,309
+or using a real tag) comes after:
+
+95
+00:06:22,067 --> 00:06:22,780
+Got it.
+
+96
+00:06:22,780 --> 00:06:25,531
+What do I need to remember?
+
+97
+00:06:26,067 --> 00:06:34,301
+A chart = templates + default values; a release = one installation; every change is a numbered revision.
+
+98
+00:06:34,867 --> 00:06:43,346
+helm install / upgrade / rollback / uninstall / list / history; lint and template before installing.
+
+99
+00:06:43,900 --> 00:06:47,871
+Values files per environment replace copies of YAML:
+
+100
+00:06:47,871 --> 00:06:51,459
+dev, test and prod differ only in their values.

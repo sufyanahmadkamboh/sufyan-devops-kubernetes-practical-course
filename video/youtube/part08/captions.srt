@@ -1,0 +1,183 @@
+1
+00:00:04,800 --> 00:00:07,141
+Can you show me health checks:
+
+2
+00:00:07,141 --> 00:00:10,184
+liveness, readiness and startup probes?
+
+3
+00:00:10,733 --> 00:00:16,477
+A probe is a check the kubelet runs against a container, again and again:
+
+4
+00:00:16,477 --> 00:00:20,175
+an HTTP request, a TCP connection or a command.
+
+5
+00:00:20,175 --> 00:00:24,738
+Kubernetes has three, each answering a different question:
+
+6
+00:00:25,300 --> 00:00:28,549
+"The process runs" is not "the application works".
+
+7
+00:00:28,549 --> 00:00:32,058
+A web server can be running while it is still loading,
+
+8
+00:00:32,058 --> 00:00:36,606
+while its database is unreachable, or while it is stuck in a deadlock.
+
+9
+00:00:36,606 --> 00:00:42,390
+Without probes Kubernetes sends traffic to all of these and never restarts the stuck one.
+
+10
+00:00:44,133 --> 00:00:46,553
+And how does it actually work?
+
+11
+00:00:47,100 --> 00:00:52,003
+The kubelet on the Pod's node runs each probe every periodSeconds.
+
+12
+00:00:52,003 --> 00:00:55,049
+After failureThreshold failures in a row:
+
+13
+00:00:55,049 --> 00:01:11,911
+| Probe fails | What Kubernetes does | Typical endpoint | |---|---|---| | startup | keeps waiting; after failureThreshold × periodSeconds it restarts the container | the same as liveness | | readiness | marks the Pod not Ready:
+
+14
+00:01:11,911 --> 00:01:30,408
+the Service stops sending it traffic; the Pod keeps running | checks dependencies (database) | | liveness | restarts the container (the restart counter goes up) | checks only the process itself | An HTTP probe succeeds on any status from 200 to 399.
+
+15
+00:01:30,408 --> 00:01:33,677
+Our backend has two endpoints made for this:
+
+16
+00:01:33,677 --> 00:01:40,437
+/livez (always 200 while the process runs) and /readyz (200 only when its database answers,
+
+17
+00:01:40,437 --> 00:01:41,997
+or when it has none).
+
+18
+00:01:41,997 --> 00:01:43,037
+Rule of thumb:
+
+19
+00:01:43,037 --> 00:01:46,379
+liveness must never depend on other services.
+
+20
+00:01:48,133 --> 00:01:48,300
+1.
+
+21
+00:01:48,300 --> 00:01:51,963
+Deploy, and look at the Pod while it starts:
+
+22
+00:01:52,500 --> 00:01:54,306
+Running but 0/1 ready:
+
+23
+00:01:54,306 --> 00:02:01,365
+the container runs, the startup probe has not succeeded yet (the backend sleeps 15 s).
+
+24
+00:02:01,365 --> 00:02:01,529
+2.
+
+25
+00:02:01,529 --> 00:02:03,417
+Wait until it is ready:
+
+26
+00:02:03,417 --> 00:02:03,581
+3.
+
+27
+00:02:03,581 --> 00:02:05,879
+Traffic through the Service:
+
+28
+00:02:06,433 --> 00:02:06,599
+3.
+
+29
+00:02:06,599 --> 00:02:08,923
+Traffic through the Service:
+
+30
+00:02:10,667 --> 00:02:13,576
+How do I see what Kubernetes did?
+
+31
+00:02:14,133 --> 00:02:19,198
+The probes as Kubernetes understood them, and the Pod's readiness condition:
+
+32
+00:02:20,933 --> 00:02:22,607
+Let me try something.
+
+33
+00:02:22,607 --> 00:02:30,973
+Tell the backend to use a database that does not exist (lesson 12's variables, set with kubectl set env):
+
+34
+00:02:31,533 --> 00:02:33,469
+What should happen?
+
+35
+00:02:33,469 --> 00:02:35,608
+The update rolls out.
+
+36
+00:02:35,608 --> 00:02:37,034
+What happened?
+
+37
+00:02:37,034 --> 00:02:38,868
+It never finishes.
+
+38
+00:02:40,633 --> 00:02:45,588
+Roll back to the previous version of the Deployment (lesson 09):
+
+39
+00:02:47,333 --> 00:02:48,047
+Got it.
+
+40
+00:02:48,047 --> 00:02:50,798
+What do I need to remember?
+
+41
+00:02:51,333 --> 00:02:52,173
+Startup:
+
+42
+00:02:52,173 --> 00:02:54,061
+finished starting?
+
+43
+00:02:54,061 --> 00:02:55,110
+Readiness:
+
+44
+00:02:55,110 --> 00:02:57,103
+may it get traffic?
+
+45
+00:02:57,667 --> 00:03:04,506
+A failing readiness probe removes the Pod from the Service and stalls a rolling update, protecting users.
+
+46
+00:03:05,067 --> 00:03:12,151
+Liveness checks only the process; a liveness probe that depends on other services causes restart storms.

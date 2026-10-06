@@ -223,7 +223,7 @@ kubectl get pod greeter -n config-lab
 
 ```text
 NAME      READY   STATUS                       RESTARTS   AGE
-greeter   0/1     CreateContainerConfigError   0          2s
+greeter   0/1     CreateContainerConfigError   0          3s
 ```
 
 ## Troubleshoot It
@@ -297,11 +297,12 @@ file; add `envFrom` under the container.
 <!-- test: contains=Hello from dev; contains="log_level":"warn" -->
 ```bash
 kubectl create configmap backend-dev -n config-lab --from-literal=MESSAGE='Hello from dev' --from-literal=LOG_LEVEL=warn
-kubectl create deployment backend-dev -n config-lab --image=learning-app/backend:1.0.0 --dry-run=client -o yaml > backend-dev.yaml
+kubectl create deployment backend-dev -n config-lab --image=learning-app/backend:1.0.0 --replicas=0 --dry-run=client -o yaml > backend-dev.yaml
 kubectl apply -n config-lab -f backend-dev.yaml
 kubectl set env deployment/backend-dev -n config-lab --from=configmap/backend-dev
+kubectl scale deployment/backend-dev -n config-lab --replicas=1
 kubectl rollout status deployment/backend-dev -n config-lab --timeout=120s
-ip=$(kubectl get pod -n config-lab -l app=backend-dev --field-selector=status.phase=Running -o jsonpath='{.items[0].status.podIP}')
+ip=$(kubectl get pod -n config-lab -l app=backend-dev --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1:].status.podIP}')
 kubectl exec -n config-lab client -- wget -qO- -T 5 "http://$ip:8080/api/config"
 rm backend-dev.yaml
 ```
@@ -309,7 +310,8 @@ rm backend-dev.yaml
 </details>
 
 `kubectl set env --from=configmap/NAME` adds one `valueFrom` entry per key to the Deployment and triggers a new
-rollout, so the Pods start with the values. Writing `envFrom` into the YAML by hand gives the same result and is
+rollout, so the Pods start with the values. The Deployment starts with `--replicas=0` and is scaled to 1 only after
+its configuration is complete: no Pod ever runs with the default settings, and only one Pod exists to ask. Writing `envFrom` into the YAML by hand gives the same result and is
 better for files you keep.
 
 ## Key Takeaways

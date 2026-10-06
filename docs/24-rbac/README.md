@@ -171,7 +171,7 @@ Pods of its namespace through the API (in lesson 23 it got `403`):
 <!-- test: contains=PodList; retry=5 -->
 ```bash
 kubectl run api-call -n rbac-lab --rm -i --quiet --restart=Never --image=alpine:3.23 \
-  --overrides='{"spec":{"serviceAccountName":"reporter"}}' -- sh -c '
+  --overrides='{"spec":{"serviceAccountName":"reporter"}}' -- sh -c 'sleep 2
   TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
   wget -qO- --no-check-certificate --header "Authorization: Bearer $TOKEN" \
     https://kubernetes.default.svc/api/v1/namespaces/rbac-lab/pods 2>&1 | head -c 60; echo'
@@ -214,7 +214,7 @@ Subjects:
   ----  ----    ---------
   User  tester  
 NAME         CREATED AT
-pod-viewer   2026-10-06T14:13:36Z
+pod-viewer   2026-10-06T16:33:52Z
 ```
 
 The binding grants a Role called `pod-viewers`; the Role is `pod-viewer`. A binding to a Role that does not exist is

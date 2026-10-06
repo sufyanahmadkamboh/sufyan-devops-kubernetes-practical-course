@@ -1,0 +1,399 @@
+1
+00:00:04,800 --> 00:00:08,184
+Can you show me resource requests and limits?
+
+2
+00:00:08,733 --> 00:00:14,296
+Every container can declare how much CPU and memory it needs:
+
+3
+00:00:14,296 --> 00:00:15,117
+requests:
+
+4
+00:00:15,117 --> 00:00:18,126
+what the container is guaranteed.
+
+5
+00:00:18,126 --> 00:00:24,966
+The scheduler only places a Pod on a node that still has its requests free.
+
+6
+00:00:24,966 --> 00:00:25,604
+limits:
+
+7
+00:00:25,604 --> 00:00:27,428
+the most it may use.
+
+8
+00:00:27,428 --> 00:00:37,003
+Above the CPU limit it is slowed down (throttled); above the memory limit the kernel kills it (OOMKilled,
+
+9
+00:00:37,003 --> 00:00:38,371
+out of memory).
+
+10
+00:00:38,371 --> 00:00:38,919
+Units:
+
+11
+00:00:38,919 --> 00:00:42,658
+CPU in cores or millicores (1 = one core,
+
+12
+00:00:42,658 --> 00:00:50,318
+100m = 0.1 core); memory in bytes with binary suffixes (128Mi = 128 mebibytes, 1Gi).
+
+13
+00:00:50,867 --> 00:00:52,373
+Many Pods share a node.
+
+14
+00:00:52,373 --> 00:00:59,577
+Without requests, the scheduler cannot know whether a node is full and packs too much onto it; without limits,
+
+15
+00:00:59,577 --> 00:01:05,143
+one leaking application can take all the memory and take its neighbours down with it.
+
+16
+00:01:05,143 --> 00:01:08,221
+Requests and limits make a cluster predictable:
+
+17
+00:01:08,221 --> 00:01:12,936
+each application gets what it asked for, and no more than it is allowed.
+
+18
+00:01:14,700 --> 00:01:17,120
+And how does it actually work?
+
+19
+00:01:17,667 --> 00:01:21,441
+The scheduler adds up requests, not real usage:
+
+20
+00:01:21,441 --> 00:01:24,573
+a node can be "full" while mostly idle.
+
+21
+00:01:24,573 --> 00:01:31,960
+Memory cannot be taken back from a process, so the only answer to too much memory is a kill.
+
+22
+00:01:31,960 --> 00:01:36,297
+CPU can be shared, so too much CPU only means waiting.
+
+23
+00:01:36,297 --> 00:01:39,509
+QoS class, set from requests and limits:
+
+24
+00:01:39,509 --> 00:01:43,524
+Guaranteed (requests = limits for CPU and memory),
+
+25
+00:01:43,524 --> 00:01:50,751
+Burstable (some requests), BestEffort (none, killed first when a node runs out of memory).
+
+26
+00:01:52,500 --> 00:01:52,678
+1.
+
+27
+00:01:52,678 --> 00:01:55,429
+A Pod with requests and limits:
+
+28
+00:01:55,967 --> 00:01:56,122
+2.
+
+29
+00:01:56,122 --> 00:01:58,600
+Its QoS class and its resources:
+
+30
+00:01:58,600 --> 00:01:59,374
+Burstable:
+
+31
+00:01:59,374 --> 00:02:02,704
+requests are set but lower than the limits.
+
+32
+00:02:02,704 --> 00:02:02,859
+3.
+
+33
+00:02:02,859 --> 00:02:06,266
+What the node has reserved for all its Pods:
+
+34
+00:02:06,800 --> 00:02:07,556
+Burstable:
+
+35
+00:02:07,556 --> 00:02:10,807
+requests are set but lower than the limits.
+
+36
+00:02:10,807 --> 00:02:10,958
+3.
+
+37
+00:02:10,958 --> 00:02:14,284
+What the node has reserved for all its Pods:
+
+38
+00:02:16,033 --> 00:02:18,943
+How do I see what Kubernetes did?
+
+39
+00:02:19,500 --> 00:02:27,709
+Current usage needs the metrics-server add-on (lesson 26 enables it); requests and limits are always in the spec:
+
+40
+00:02:29,467 --> 00:02:31,299
+Let me try something.
+
+41
+00:02:31,299 --> 00:02:36,361
+A container whose memory keeps growing, with a 32Mi limit:
+
+42
+00:02:36,900 --> 00:02:39,077
+What should happen?
+
+43
+00:02:39,077 --> 00:02:41,254
+The container runs.
+
+44
+00:02:41,254 --> 00:02:42,859
+What happened?
+
+45
+00:02:42,859 --> 00:02:44,005
+OOMKilled.
+
+46
+00:02:45,767 --> 00:02:47,423
+For a real application:
+
+47
+00:02:47,423 --> 00:02:52,679
+raise the limit to what it really needs (measure first), or fix the leak.
+
+48
+00:02:52,679 --> 00:02:59,736
+Our tail grows forever, so no limit is enough; replace it with a bounded command and give it room:
+
+49
+00:03:01,500 --> 00:03:02,213
+Got it.
+
+50
+00:03:02,213 --> 00:03:04,965
+What do I need to remember?
+
+51
+00:03:05,500 --> 00:03:11,964
+Requests decide where a Pod can run (scheduling); limits decide how much it may use.
+
+52
+00:03:12,500 --> 00:03:20,635
+Over the memory limit → OOMKilled, exit code 137; over the CPU limit → throttled.
+
+53
+00:03:21,200 --> 00:03:26,950
+Pending with Insufficient cpu/memory means requests do not fit on any node.
+
+54
+00:03:28,700 --> 00:03:32,183
+I keep hearing about scheduling basics.
+
+55
+00:03:32,183 --> 00:03:33,880
+What is it, really?
+
+56
+00:03:34,433 --> 00:03:37,663
+Scheduling is choosing a node for a new Pod.
+
+57
+00:03:37,663 --> 00:03:42,580
+The scheduler (lesson 02) filters out the nodes that cannot run it,
+
+58
+00:03:42,580 --> 00:03:46,324
+scores the rest and writes the winner into the Pod.
+
+59
+00:03:46,324 --> 00:03:48,525
+You influence its choice with:
+
+60
+00:03:48,525 --> 00:03:50,654
+node labels and nodeSelector:
+
+61
+00:03:50,654 --> 00:03:57,186
+"only on nodes labelled disktype=ssd" (the Pod chooses the node); taints and tolerations:
+
+62
+00:03:57,186 --> 00:04:02,838
+a node says "keep away unless you tolerate lab=demo" (the node rejects Pods).
+
+63
+00:04:03,400 --> 00:04:05,039
+Nodes are not all equal:
+
+64
+00:04:05,039 --> 00:04:10,911
+some have GPUs or fast disks, some are reserved for one team or for system components,
+
+65
+00:04:10,911 --> 00:04:13,573
+some are being drained for maintenance.
+
+66
+00:04:13,573 --> 00:04:20,469
+Labels and selectors send Pods where they belong; taints keep the wrong Pods away from special nodes.
+
+67
+00:04:22,233 --> 00:04:24,653
+And how does it actually work?
+
+68
+00:04:25,200 --> 00:04:27,388
+nodeSelector is a hard rule:
+
+69
+00:04:27,388 --> 00:04:29,888
+no matching node, no scheduling.
+
+70
+00:04:29,888 --> 00:04:32,701
+(nodeAffinity is the richer version:
+
+71
+00:04:32,701 --> 00:04:38,718
+preferences, In/NotIn expressions.) A taint has a key, a value and an effect:
+
+72
+00:04:38,718 --> 00:04:43,719
+NoSchedule (new Pods without a toleration are not placed there),
+
+73
+00:04:43,719 --> 00:04:49,501
+PreferNoSchedule (avoid if possible), NoExecute (also evict running Pods).
+
+74
+00:04:49,501 --> 00:04:55,830
+A toleration only allows a Pod onto a tainted node; it does not attract it there.
+
+75
+00:04:55,830 --> 00:05:06,379
+Control-plane nodes in real clusters carry the taint node-role.kubernetes.io/control-plane:NoSchedule; Minikube's single node does not,
+
+76
+00:05:06,379 --> 00:05:08,254
+so it can run your Pods.
+
+77
+00:05:09,000 --> 00:05:10,173
+1.
+
+78
+00:05:10,173 --> 00:05:12,684
+The node's labels and taints:
+
+79
+00:05:13,233 --> 00:05:13,430
+2.
+
+80
+00:05:13,430 --> 00:05:16,278
+A Pod that wants an SSD node:
+
+81
+00:05:16,833 --> 00:05:16,985
+3.
+
+82
+00:05:16,985 --> 00:05:21,918
+Label the node, and the scheduler places the Pod on its next try:
+
+83
+00:05:22,467 --> 00:05:22,618
+3.
+
+84
+00:05:22,618 --> 00:05:27,551
+Label the node, and the scheduler places the Pod on its next try:
+
+85
+00:05:29,300 --> 00:05:32,209
+How do I see what Kubernetes did?
+
+86
+00:05:32,767 --> 00:05:38,281
+-L disktype adds the label as a column, handy on clusters with many nodes.
+
+87
+00:05:40,033 --> 00:05:41,575
+Let me try something.
+
+88
+00:05:41,575 --> 00:05:47,743
+Taint the node, as an administrator would to reserve it, and create an ordinary Pod:
+
+89
+00:05:48,300 --> 00:05:50,391
+What should happen?
+
+90
+00:05:50,391 --> 00:05:51,822
+The Pod runs.
+
+91
+00:05:51,822 --> 00:05:53,363
+What happened?
+
+92
+00:05:53,363 --> 00:05:56,224
+Pending, no node assigned.
+
+93
+00:05:57,967 --> 00:06:00,643
+Two fixes, for two situations.
+
+94
+00:06:00,643 --> 00:06:05,461
+If the Pod belongs on that node, give it a toleration:
+
+95
+00:06:07,200 --> 00:06:07,913
+Got it.
+
+96
+00:06:07,913 --> 00:06:10,664
+What do I need to remember?
+
+97
+00:06:11,200 --> 00:06:18,144
+The scheduler filters nodes by free requests, nodeSelector labels and taints, then picks one.
+
+98
+00:06:18,700 --> 00:06:25,109
+nodeSelector pulls a Pod to labelled nodes; a taint pushes Pods away unless they tolerate it.
+
+99
+00:06:25,667 --> 00:06:29,566
+Pending + FailedScheduling event = read the message:
+
+100
+00:06:29,566 --> 00:06:32,266
+it names the rule no node satisfied.

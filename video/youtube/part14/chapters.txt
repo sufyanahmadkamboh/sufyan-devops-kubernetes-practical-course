@@ -1,0 +1,2 @@
+0:00 25 · Scaling
+2:56 26 · Horizontal Pod Autoscaler

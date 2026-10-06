@@ -66,7 +66,7 @@ kubectl get pods -n lab-secret -l app=backend
 
 ```text
 NAME                       READY   STATUS              RESTARTS   AGE
-backend-7b8596c798-z6tls   0/1     ContainerCreating   0          1s
+backend-7b8596c798-jdtw7   0/1     ContainerCreating   0          0s
 ```
 
 ## Troubleshoot It
@@ -104,7 +104,7 @@ kubectl rollout status deployment/backend -n lab-secret --timeout=120s
 
 <!-- test: contains=set (from file) -->
 ```bash
-ip=$(kubectl get pod -n lab-secret -l app=backend --field-selector=status.phase=Running -o jsonpath='{.items[0].status.podIP}')
+ip=$(kubectl get pod -n lab-secret -l app=backend --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1:].status.podIP}')
 kubectl exec -n lab-secret client -- wget -qO- -T 5 "http://$ip:8080/api/config"
 ```
 

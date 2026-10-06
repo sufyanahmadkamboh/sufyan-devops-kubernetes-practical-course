@@ -1,0 +1,2 @@
+0:00 08 · ReplicaSets
+2:34 09 · Deployments, rolling updates and rollbacks

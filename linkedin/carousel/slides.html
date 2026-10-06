@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LinkedIn carousel: Kubernetes Practical Course</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0b1420; --panel:#13233a; --line:#284468; --ink:#f1f6fc; --muted:#a9bbd2; --blue:#1d91e6; --sky:#8ec9ff;
+          --ok:#4cc286; --bad:#ff6b6b; --amber:#ffc94d; --violet:#b48cff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:1080px; height:1350px; overflow:hidden; }
+  body { background: radial-gradient(900px 600px at 100% 0%, rgba(29,145,230,.28), transparent 60%),
+         radial-gradient(700px 500px at 0% 100%, rgba(142,201,255,.10), transparent 60%), var(--bg);
+         font-family: Inter, "Segoe UI", sans-serif; color: var(--ink); position: relative; }
+  body::before { content:""; position:absolute; inset:0; background-image: linear-gradient(rgba(156,195,240,.05) 1px, transparent 1px),
+                 linear-gradient(90deg, rgba(156,195,240,.05) 1px, transparent 1px); background-size: 54px 54px; }
+  .slide { display:none; position:absolute; inset:0; padding: 74px 70px 118px; flex-direction: column; }
+  .slide.on { display:flex; }
+  .kicker { color: var(--sky); font-weight: 800; font-size: 28px; letter-spacing: 3px; text-transform: uppercase; }
+  h1 { font-size: 74px; line-height: 1.04; font-weight: 900; letter-spacing: -1.5px; margin: 16px 0 12px; }
+  h2 { font-size: 60px; line-height: 1.06; font-weight: 900; letter-spacing: -1px; margin: 14px 0 10px; }
+  .sub { font-size: 32px; color: var(--muted); line-height: 1.35; }
+  .visual { flex: 1; display:flex; flex-direction: column; align-items:stretch; justify-content:center; gap: 22px; }
+  .blue { color: var(--blue); } .ok { color: var(--ok); } .bad { color: var(--bad); } .amber { color: var(--amber); } .sky { color: var(--sky); }
+  .footer { position:absolute; left:70px; right:70px; bottom:42px; display:flex; justify-content:space-between; font-size:25px; color:var(--muted); }
+  .footer b { color: var(--ink); } .swipe { color: var(--sky); font-weight:700; }
+  .term { background:#0a0f18; border:3px solid var(--line); border-radius:22px; padding: 26px 30px; font: 600 25px/1.6 "JetBrains Mono", Consolas, monospace; color:#c9d6e6; white-space: pre-wrap; word-break: break-word; }
+  .term .c { color: var(--sky); } .term .bad { color:#ff8a8a; } .term .ok { color: var(--ok); } .term .d { color:#7d8ea6; }
+  .tiles { display:grid; grid-template-columns: 1fr 1fr; gap: 22px; width: 100%; }
+  .tile { background: var(--panel); border: 3px solid var(--line); border-top: 10px solid var(--tone); border-radius: 22px; padding: 22px 26px; }
+  .tile b { display:block; font-size: 62px; font-weight: 900; color: var(--tone); line-height: 1.05; }
+  .tile span { font-size: 26px; color: var(--muted); font-weight: 600; }
+  .row { display:flex; gap: 18px; align-items: stretch; }
+  .box { flex:1; background: var(--panel); border: 3px solid var(--tone, var(--line)); border-radius: 20px; padding: 20px 22px; }
+  .box b { display:block; font-size: 30px; color: var(--tone, var(--ink)); margin-bottom: 6px; }
+  .box span { font-size: 24px; color: var(--muted); line-height: 1.35; }
+  .steps { display:flex; flex-wrap: wrap; gap: 14px; }
+  .step { background: var(--panel); border: 3px solid var(--line); border-radius: 40px; padding: 12px 24px; font-size: 27px; font-weight: 800; }
+  .step.hot { border-color: var(--bad); color: #ffb3b3; }
+  .bar { display:flex; align-items:center; gap: 18px; font-size: 28px; font-weight: 700; }
+  .bar i { display:block; height: 54px; border-radius: 12px; background: var(--tone); }
+  .bar span { min-width: 260px; }
+  .qr { background:#fff; border-radius: 18px; padding: 18px; width: 300px; height: 300px; }
+  .layer { border-radius: 14px; padding: 14px 20px; font: 700 25px "JetBrains Mono", Consolas, monospace; background: var(--panel); border: 3px solid var(--tone); color: var(--tone); }
+  code { font-family: "JetBrains Mono", Consolas, monospace; color: var(--sky); }
+</style>
+</head>
+<body>
+
+<!-- 1 · HOOK -->
+<section class="slide" data-n="1">
+  <div class="kicker">Free hands-on course · explained visually</div>
+  <h1>Kubernetes, from zero to practical: <span class="blue">every command tested</span></h1>
+  <div class="sub">29 lessons on a cluster on your own computer. Deploy it, inspect it, break it, fix it.</div>
+  <div class="visual">
+    <div class="tiles">
+      <div class="tile" style="--tone:var(--blue)"><b>29</b><span>hands-on lessons</span></div>
+      <div class="tile" style="--tone:var(--bad)"><b>14</b><span>broken clusters to fix</span></div>
+      <div class="tile" style="--tone:var(--ok)"><b>__BLOCKS__</b><span>code blocks tested in CI</span></div>
+      <div class="tile" style="--tone:var(--amber)"><b>13 + 1</b><span>labs + a capstone</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · THE PAIN -->
+<section class="slide" data-n="2">
+  <div class="kicker">The real problem</div>
+  <h2>Tutorials end at <span class="blue">kubectl apply</span>. Work starts with these:</h2>
+  <div class="visual">
+    <div class="term" style="font-size:22px"><span class="bad">pod/writer   0/1   Pending   0   5s</span>
+<span class="bad">worker-5b6dd64668-nkhvt   0/1   CrashLoopBackOff   1 (2s ago)</span>
+<span class="bad">backend-7c96cd4d65-9gzpz   learning-app/backend:3.0.0   ImagePullBackOff</span>
+<span class="bad">import   0/1   OOMKilled   0   5s</span>
+<span class="bad">Readiness probe failed: HTTP probe failed with statuscode: 404</span>
+<span class="d">Selector:  app=back-end</span>
+<span class="bad">Endpoints: </span>
+<span class="bad">wget: bad address 'backend'</span></div>
+    <div class="sub">Real outputs from the course's troubleshooting lab. Each one is reproduced, investigated and fixed.</div>
+  </div>
+</section>
+
+<!-- 3 · THE METHOD -->
+<section class="slide" data-n="3">
+  <div class="kicker">The method</div>
+  <h2>Every concept, the same path</h2>
+  <div class="visual">
+    <div class="steps">
+      <div class="step">Theory</div><div class="step">Visual</div><div class="step">YAML</div>
+      <div class="step">kubectl</div><div class="step">Deploy</div><div class="step">Inspect</div>
+      <div class="step">Experiment</div><div class="step hot">Break it</div><div class="step hot">Troubleshoot</div>
+      <div class="step hot">Fix it</div>
+    </div>
+    <div class="sub">Every lesson explains its YAML field by field, has a lab with the expected result, a failure made on
+      purpose with its real events, a challenge with a hidden solution, and "where you use this in a DevOps job".</div>
+  </div>
+</section>
+
+<!-- 4 · CONCEPT: DESIRED STATE -->
+<section class="slide" data-n="4">
+  <div class="kicker">Concept · desired state</div>
+  <h2>You declare. Kubernetes keeps it true.</h2>
+  <div class="visual">
+    <div class="row">
+      <div class="box" style="--tone:var(--blue)"><b>Deployment</b><span>replicas: 3<br>image: backend:2.0.0</span></div>
+      <div class="box" style="--tone:var(--violet)"><b>ReplicaSet</b><span>"3 wanted, 2 running"<br>→ create one</span></div>
+      <div class="box" style="--tone:var(--ok)"><b>Pods</b><span>3 running again<br>on any healthy node</span></div>
+    </div>
+    <div class="sub">Delete a Pod and it comes back. Update the image and old Pods are replaced one by one; a bad image
+      stops the rollout while the old version keeps serving, and <code>kubectl rollout undo</code> brings it back.</div>
+  </div>
+</section>
+
+<!-- 5 · CONCEPT: SERVICES -->
+<section class="slide" data-n="5">
+  <div class="kicker">Concept · Services and labels</div>
+  <h2>One stable name for Pods that come and go</h2>
+  <div class="visual">
+    <div class="term" style="font-size:23px"><span class="c">$ kubectl describe service backend-service</span>
+<span class="d">Selector:  app=back-end</span>
+<span class="bad">Endpoints: </span>
+<span class="c">$ kubectl get pods --show-labels</span>
+<span class="ok">backend-…-5jt79   1/1   Running   app=backend</span></div>
+    <div class="sub">A Service finds its Pods by their labels. One typo in the selector and it has no endpoints:
+      every Pod is healthy, and every request fails.</div>
+  </div>
+</section>
+
+<!-- 6 · CONCEPT: SECURITY -->
+<section class="slide" data-n="6">
+  <div class="kicker">Concept · NetworkPolicies and RBAC</div>
+  <h2>Only the allowed paths, only the allowed people</h2>
+  <div class="visual">
+    <div class="row">
+      <div class="box" style="--tone:var(--amber)"><b>ingress</b><span>→ frontend :8080</span></div>
+      <div class="box" style="--tone:var(--ok)"><b>frontend</b><span>→ backend :8080</span></div>
+      <div class="box" style="--tone:var(--violet)"><b>backend</b><span>→ database :5432</span></div>
+    </div>
+    <div class="term" style="font-size:23px"><span class="c">$ kubectl auth can-i list pods --as developer</span>
+<span class="ok">yes</span>
+<span class="c">$ kubectl auth can-i delete pods --as developer</span>
+<span class="bad">no</span></div>
+    <div class="sub">Default-deny policies enforced by Calico (the frontend can never reach the database), and a
+      read-only Role for people.</div>
+  </div>
+</section>
+
+<!-- 7 · LEARNED -->
+<section class="slide" data-n="7">
+  <div class="kicker">Things the tests taught me</div>
+  <h2>Surprises worth knowing</h2>
+  <div class="visual">
+    <div class="tiles">
+      <div class="tile" style="--tone:var(--bad)"><span>A PVC still used by a finished Job's Pod waits in <b style="font-size:30px;display:inline">Terminating</b> forever</span></div>
+      <div class="tile" style="--tone:var(--amber)"><span><b style="font-size:30px;display:inline">runAsNonRoot</b> fails when the image's user is a name, not a number</span></div>
+      <div class="tile" style="--tone:var(--blue)"><span>A probe's default timeout is <b style="font-size:30px;display:inline">1 s</b>: a database check can fail it</span></div>
+      <div class="tile" style="--tone:var(--violet)"><span>A Minikube node reports the <b style="font-size:30px;display:inline">host's</b> CPUs, not the ones you gave it</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · THE CAPSTONE -->
+<section class="slide" data-n="8">
+  <div class="kicker">The capstone</div>
+  <h2>A production-style application, then six breaks</h2>
+  <div class="visual">
+    <div class="steps">
+      <div class="step">Ingress</div><div class="step">frontend</div><div class="step">backend + HPA</div><div class="step">PostgreSQL + PVC</div>
+      <div class="step">probes</div><div class="step">limits</div><div class="step">backup CronJob</div><div class="step">RBAC</div>
+    </div>
+    <div class="steps">
+      <div class="step hot">image</div><div class="step hot">Service</div><div class="step hot">ConfigMap</div>
+      <div class="step hot">probe</div><div class="step hot">storage</div><div class="step hot">NetworkPolicy</div>
+    </div>
+    <div class="sub">Each break: the user's symptom, the object that explains it, the root cause, the fix from the
+      reviewed files, and a verification as the user.</div>
+  </div>
+</section>
+
+<!-- 9 · WHAT IS INSIDE -->
+<section class="slide" data-n="9">
+  <div class="kicker">What is inside</div>
+  <h2>Everything to learn it, and prove it</h2>
+  <div class="visual">
+    <div class="tiles">
+      <div class="tile" style="--tone:var(--blue)"><b>13</b><span>hands-on labs</span></div>
+      <div class="tile" style="--tone:var(--bad)"><b>19</b><span>challenges, solutions hidden</span></div>
+      <div class="tile" style="--tone:var(--ok)"><b>__VIDEOS__</b><span>videos, full + silent</span></div>
+      <div class="tile" style="--tone:var(--amber)"><b>__PAGES__</b><span>page study guide PDF</span></div>
+    </div>
+    <div class="sub">Plus a Helm chart with values per environment, 13 diagrams, a glossary, 22 interview questions and a
+      final knowledge checklist.</div>
+  </div>
+</section>
+
+<!-- 10 · TESTED -->
+<section class="slide" data-n="10">
+  <div class="kicker">Every command tested</div>
+  <h2>The lessons are the test suite</h2>
+  <div class="visual">
+    <div class="term" style="font-size:22px"><span class="d">&lt;!-- test: contains=Readiness probe failed; retry=20 --&gt;</span>
+<span class="c">```bash</span>
+kubectl get events -n trouble-06 --field-selector reason=Unhealthy …
+<span class="c">```</span></div>
+    <div class="sub">A runner executes every block as a learner types it, on a real Minikube cluster, resets the cluster
+      between lessons and writes the real output back. GitHub Actions does the same on a fresh cluster.</div>
+  </div>
+</section>
+
+<!-- 11 · LINKS -->
+<section class="slide" data-n="11">
+  <div class="kicker">Free and local</div>
+  <h2>minikube start</h2>
+  <div class="visual">
+    <div class="row" style="justify-content:center;gap:60px">
+      <div style="text-align:center"><img class="qr" src="qr-repo.svg" alt="QR code to the course"><div class="sub" style="margin-top:14px">the course</div></div>
+      <div style="text-align:center"><img class="qr" src="qr-portfolio.svg" alt="QR code to the portfolio"><div class="sub" style="margin-top:14px">all my projects</div></div>
+    </div>
+    <div class="sub" style="text-align:center">Which Kubernetes error cost you the most time?</div>
+  </div>
+</section>
+
+<div class="footer"><span><b>Sufyan Ahmad</b> · DevOps Engineer</span><span class="swipe" id="pg"></span></div>
+<script>
+  const n = +(new URLSearchParams(location.search).get("s") || 1);
+  document.querySelector(`.slide[data-n="${n}"]`).classList.add("on");
+  document.getElementById("pg").textContent = n < 11 ? `${n} / 11 · swipe →` : "11 / 11";
+  window.__ready = true;
+</script>
+</body>
+</html>

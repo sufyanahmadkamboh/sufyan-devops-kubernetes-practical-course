@@ -1,0 +1,7 @@
+0:00 29 · Capstone: a production-style application
+5:04 Image
+5:24 Service
+5:51 Configuration
+6:14 Probe
+6:36 Storage
+7:23 NetworkPolicy

@@ -1,0 +1,407 @@
+1
+00:00:04,800 --> 00:00:07,344
+Can you show me ServiceAccounts?
+
+2
+00:00:07,900 --> 00:00:11,209
+A ServiceAccount is an identity for a workload:
+
+3
+00:00:11,209 --> 00:00:14,940
+a Pod that talks to the Kubernetes API (to list Pods,
+
+4
+00:00:14,940 --> 00:00:19,164
+read a ConfigMap, create a Job) does it as a ServiceAccount.
+
+5
+00:00:19,164 --> 00:00:23,880
+Kubernetes gives the Pod a short-lived token proving that identity.
+
+6
+00:00:23,880 --> 00:00:24,725
+The analogy:
+
+7
+00:00:24,725 --> 00:00:32,047
+people get a personal badge (a user account); the delivery robot in the building gets its own badge too,
+
+8
+00:00:32,047 --> 00:00:36,975
+with its own name, so the doors know it is the robot and not a person.
+
+9
+00:00:37,533 --> 00:00:40,576
+Some applications need the Kubernetes API:
+
+10
+00:00:40,576 --> 00:00:44,923
+a CI runner creating Pods, a monitoring agent reading nodes,
+
+11
+00:00:44,923 --> 00:00:51,153
+an operator managing a database, the ingress controller reading Ingresses (lesson 20).
+
+12
+00:00:51,153 --> 00:00:57,962
+Each needs an identity, so that permissions (lesson 24) can be given to that application only,
+
+13
+00:00:57,962 --> 00:01:01,874
+and so the audit log shows which application did what.
+
+14
+00:01:01,874 --> 00:01:06,511
+| | User | ServiceAccount | |---|---|---| | Who | a person (you,
+
+15
+00:01:06,511 --> 00:01:12,596
+a colleague) | a workload (a Pod) | | Created by | outside Kubernetes (certificates,
+
+16
+00:01:12,596 --> 00:01:15,638
+an identity provider) | Kubernetes itself:
+
+17
+00:01:15,638 --> 00:01:16,001
+kind:
+
+18
+00:01:16,001 --> 00:01:25,853
+ServiceAccount | | Scope | the cluster | one namespace | | Name in permissions | developer | system:serviceaccount:<namespace>:<name> |.
+
+19
+00:01:27,600 --> 00:01:30,019
+And how does it actually work?
+
+20
+00:01:30,567 --> 00:01:37,053
+Every namespace has a ServiceAccount called default; a Pod that names none uses it.
+
+21
+00:01:37,053 --> 00:01:40,491
+spec.serviceAccountName chooses another one.
+
+22
+00:01:40,491 --> 00:01:54,480
+The kubelet mounts a token, the cluster's CA certificate and the namespace into /var/run/secrets/kubernetes.io/serviceaccount/; the token is short-lived and renewed automatically.
+
+23
+00:01:54,480 --> 00:02:00,497
+The API server is reachable from every Pod at https://kubernetes.default.svc.
+
+24
+00:02:00,497 --> 00:02:06,202
+A ServiceAccount starts with no permissions (beyond discovering the API):
+
+25
+00:02:06,202 --> 00:02:08,546
+identity is not authorization.
+
+26
+00:02:10,300 --> 00:02:10,457
+1.
+
+27
+00:02:10,457 --> 00:02:13,985
+Every namespace has a default ServiceAccount:
+
+28
+00:02:14,533 --> 00:02:14,672
+2.
+
+29
+00:02:14,672 --> 00:02:18,698
+Create the reporter ServiceAccount and a Pod that uses it:
+
+30
+00:02:19,233 --> 00:02:19,393
+3.
+
+31
+00:02:19,393 --> 00:02:21,148
+What the Pod received:
+
+32
+00:02:21,148 --> 00:02:21,308
+4.
+
+33
+00:02:21,308 --> 00:02:25,855
+Call the Kubernetes API from inside the Pod, as reporter:
+
+34
+00:02:25,855 --> 00:02:28,328
+list the Pods of its namespace.
+
+35
+00:02:28,867 --> 00:02:29,018
+4.
+
+36
+00:02:29,018 --> 00:02:33,320
+Call the Kubernetes API from inside the Pod, as reporter:
+
+37
+00:02:33,320 --> 00:02:35,660
+list the Pods of its namespace.
+
+38
+00:02:35,660 --> 00:02:42,981
+(--no-check-certificate keeps the example short; a real client verifies the server with ca.crt.).
+
+39
+00:02:44,733 --> 00:02:47,643
+How do I see what Kubernetes did?
+
+40
+00:02:48,200 --> 00:02:53,874
+Ask the API server what a ServiceAccount may do, without running anything as it:
+
+41
+00:02:55,633 --> 00:02:57,237
+Let me try something.
+
+42
+00:02:57,237 --> 00:03:01,513
+A Deployment names a ServiceAccount that does not exist:
+
+43
+00:03:02,067 --> 00:03:03,821
+What should happen?
+
+44
+00:03:03,821 --> 00:03:05,391
+One exporter Pod.
+
+45
+00:03:05,391 --> 00:03:06,684
+What happened?
+
+46
+00:03:06,684 --> 00:03:08,715
+0/1 and no Pod at all:
+
+47
+00:03:08,715 --> 00:03:10,839
+not even a failing one.
+
+48
+00:03:10,839 --> 00:03:20,996
+When a Pod does not exist, its events cannot help; the object that creates Pods is the ReplicaSet (lesson 08).
+
+49
+00:03:22,733 --> 00:03:28,598
+Create the ServiceAccount; the ReplicaSet keeps retrying and succeeds by itself:
+
+50
+00:03:30,333 --> 00:03:31,047
+Got it.
+
+51
+00:03:31,047 --> 00:03:33,798
+What do I need to remember?
+
+52
+00:03:34,333 --> 00:03:40,293
+ServiceAccount = a namespaced identity for workloads; users are for people.
+
+53
+00:03:40,833 --> 00:03:50,803
+Pods get a short-lived token at /var/run/secrets/kubernetes.io/serviceaccount/token; the API is at.
+
+54
+00:03:51,367 --> 00:03:53,686
+Identity is not permission:
+
+55
+00:03:53,686 --> 00:03:59,871
+a new ServiceAccount gets 403 until a RoleBinding allows it (lesson 24).
+
+56
+00:04:01,633 --> 00:04:04,276
+I keep hearing about RBAC.
+
+57
+00:04:04,276 --> 00:04:06,208
+What is it, really?
+
+58
+00:04:06,767 --> 00:04:12,090
+RBAC (role-based access control) decides who may do what in a cluster.
+
+59
+00:04:12,090 --> 00:04:19,770
+A Role lists permissions ("get, list and watch Pods"); a RoleBinding gives a Role to someone (a user,
+
+60
+00:04:19,770 --> 00:04:21,823
+a group, a ServiceAccount).
+
+61
+00:04:21,823 --> 00:04:26,690
+Their cluster-wide versions, ClusterRole and ClusterRoleBinding,
+
+62
+00:04:26,690 --> 00:04:31,861
+cover objects without a namespace (nodes) or all namespaces at once.
+
+63
+00:04:31,861 --> 00:04:32,773
+The analogy:
+
+64
+00:04:32,773 --> 00:04:37,259
+a Role is a job description ("may read the patient files"),
+
+65
+00:04:37,259 --> 00:04:43,951
+a RoleBinding is the signed contract that gives that job to a person, in one department.
+
+66
+00:04:44,500 --> 00:04:49,902
+Without authorization, anyone who can reach the API can delete production.
+
+67
+00:04:49,902 --> 00:04:51,508
+Teams need rules like:
+
+68
+00:04:51,508 --> 00:04:55,595
+developers may look at Pods and logs in their namespace,
+
+69
+00:04:55,595 --> 00:05:03,479
+but not delete them; the CI system may deploy to staging only; a monitoring agent may read nodes everywhere.
+
+70
+00:05:03,479 --> 00:05:08,005
+RBAC expresses exactly that, and kubectl auth can-i checks it.
+
+71
+00:05:09,767 --> 00:05:12,186
+And how does it actually work?
+
+72
+00:05:12,733 --> 00:05:16,298
+Every API request is checked in two steps:
+
+73
+00:05:18,033 --> 00:05:18,185
+1.
+
+74
+00:05:18,185 --> 00:05:21,058
+A namespace with something to look at:
+
+75
+00:05:21,600 --> 00:05:21,738
+2.
+
+76
+00:05:21,738 --> 00:05:25,123
+Before any binding, the developer may do nothing:
+
+77
+00:05:25,123 --> 00:05:25,261
+3.
+
+78
+00:05:25,261 --> 00:05:28,714
+Give the developer the read-only Role in rbac-lab:
+
+79
+00:05:29,267 --> 00:05:29,406
+3.
+
+80
+00:05:29,406 --> 00:05:32,901
+Give the developer the read-only Role in rbac-lab:
+
+81
+00:05:33,467 --> 00:05:33,645
+4.
+
+82
+00:05:33,645 --> 00:05:35,606
+Check the permissions:
+
+83
+00:05:35,606 --> 00:05:38,636
+can view Pods, cannot delete them.
+
+84
+00:05:38,636 --> 00:05:38,814
+5.
+
+85
+00:05:38,814 --> 00:05:40,686
+Act as the developer:
+
+86
+00:05:42,433 --> 00:05:45,343
+How do I see what Kubernetes did?
+
+87
+00:05:45,900 --> 00:05:50,944
+Everything the developer may do in the namespace, and who holds the bindings:
+
+88
+00:05:52,700 --> 00:05:54,236
+Let me try something.
+
+89
+00:05:54,236 --> 00:05:59,939
+A tester should get the same read-only access; a colleague writes the binding:
+
+90
+00:06:00,500 --> 00:06:02,440
+What should happen?
+
+91
+00:06:02,440 --> 00:06:02,849
+yes.
+
+92
+00:06:02,849 --> 00:06:04,278
+What happened?
+
+93
+00:06:04,278 --> 00:06:04,585
+no.
+
+94
+00:06:04,585 --> 00:06:09,690
+Kubernetes accepted the binding without complaint.
+
+95
+00:06:09,690 --> 00:06:11,834
+Which objects decide?
+
+96
+00:06:13,600 --> 00:06:15,349
+roleRef cannot be changed:
+
+97
+00:06:15,349 --> 00:06:19,319
+delete the binding and create it again with the right name:
+
+98
+00:06:21,067 --> 00:06:21,780
+Got it.
+
+99
+00:06:21,780 --> 00:06:24,531
+What do I need to remember?
+
+100
+00:06:25,067 --> 00:06:31,901
+Authentication says who you are; RBAC authorization says what you may do; the default is deny.
+
+101
+00:06:32,467 --> 00:06:41,366
+Role + RoleBinding = one namespace; ClusterRole + ClusterRoleBinding = cluster-wide and cluster-scoped objects.
+
+102
+00:06:41,900 --> 00:06:47,999
+kubectl auth can-i VERB RESOURCE -n NS --as SUBJECT answers every RBAC question.

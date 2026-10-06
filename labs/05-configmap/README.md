@@ -76,7 +76,7 @@ kubectl rollout status deployment/backend -n lab-configmap --timeout=120s
 
 <!-- test: contains="log_level":"warn"; retry=5 -->
 ```bash
-ip=$(kubectl get pod -n lab-configmap -l app=backend --field-selector=status.phase=Running -o jsonpath='{.items[0].status.podIP}')
+ip=$(kubectl get pod -n lab-configmap -l app=backend --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1:].status.podIP}')
 kubectl exec -n lab-configmap client -- wget -qO- -T 5 "http://$ip:8080/api/config"
 ```
 

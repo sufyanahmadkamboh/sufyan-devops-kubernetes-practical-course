@@ -1,0 +1,531 @@
+1
+00:00:04,800 --> 00:00:08,327
+A colleague deployed the nightly report service.
+
+2
+00:00:08,327 --> 00:00:11,119
+Hours later it still has not run once.
+
+3
+00:00:11,667 --> 00:00:13,136
+What is broken?
+
+4
+00:00:13,136 --> 00:00:15,781
+The Pod is never scheduled.
+
+5
+00:00:16,333 --> 00:00:18,341
+The Pod requests cpu:
+
+6
+00:00:18,341 --> 00:00:23,888
+"64", 64 whole CPUs (the author meant 64m, 64 millicores).
+
+7
+00:00:23,888 --> 00:00:30,773
+No node can offer that, so the scheduler leaves the Pod Pending forever.
+
+8
+00:00:32,533 --> 00:00:35,707
+Request what the application really needs.
+
+9
+00:00:35,707 --> 00:00:40,468
+Fix the manifest and apply it; the Deployment replaces the Pod:
+
+10
+00:00:41,033 --> 00:00:44,443
+Pending + NODE <none> = a scheduling problem:
+
+11
+00:00:44,443 --> 00:00:47,323
+read the FailedScheduling event first.
+
+12
+00:00:49,067 --> 00:00:52,271
+The new queue worker was deployed this morning.
+
+13
+00:00:52,271 --> 00:00:55,611
+Its Pod shows a restart count that keeps growing.
+
+14
+00:00:56,167 --> 00:00:57,893
+What should happen?
+
+15
+00:00:57,893 --> 00:00:59,891
+A long-running worker.
+
+16
+00:01:00,433 --> 00:01:06,734
+The worker needs QUEUE_URL and refuses to start without it; the Deployment does not set it.
+
+17
+00:01:06,734 --> 00:01:13,173
+Kubernetes restarts the container exactly as configured, so it fails the same way every time.
+
+18
+00:01:14,933 --> 00:01:21,048
+Give the container its configuration (in real life from a ConfigMap, lesson 11):
+
+19
+00:01:21,600 --> 00:01:27,150
+CrashLoopBackOff is not the error; it is Kubernetes waiting between restarts.
+
+20
+00:01:28,900 --> 00:01:35,125
+A web server was deployed "with the usual nginx image", but it never starts.
+
+21
+00:01:35,125 --> 00:01:35,945
+Set it up:
+
+22
+00:01:36,500 --> 00:01:38,572
+Which object is involved?
+
+23
+00:01:38,572 --> 00:01:43,712
+The kubelet tried to download the image named in the Pod spec,
+
+24
+00:01:43,712 --> 00:01:50,095
+from the registry (docker.io/library/nginx), and the registry said not found.
+
+25
+00:01:50,633 --> 00:01:52,142
+A typo in the tag:
+
+26
+00:01:52,142 --> 00:01:54,153
+alpne instead of alpine.
+
+27
+00:01:54,153 --> 00:01:59,768
+No such image exists, so the kubelet can never start the container.
+
+28
+00:02:03,033 --> 00:02:05,789
+ErrImagePull / ImagePullBackOff:
+
+29
+00:02:05,789 --> 00:02:13,367
+read the Failed to pull image event, it quotes the exact name and the registry's answer.
+
+30
+00:02:13,367 --> 00:02:21,548
+not found = wrong name or tag; unauthorized = credentials; 429 = rate limit; timeout = network.
+
+31
+00:02:23,300 --> 00:02:28,424
+The team wants a "toolbox" Pod with BusyBox to run debugging commands in.
+
+32
+00:02:28,424 --> 00:02:32,565
+It keeps restarting, although nothing is wrong in its logs.
+
+33
+00:02:33,100 --> 00:02:35,515
+Exit code 0, reason Completed:
+
+34
+00:02:35,515 --> 00:02:39,862
+the container did not crash, it finished successfully.
+
+35
+00:02:39,862 --> 00:02:44,210
+A container lives exactly as long as its main process.
+
+36
+00:02:44,767 --> 00:02:47,879
+The container has no long-running process.
+
+37
+00:02:47,879 --> 00:02:55,436
+Deployments are for programs that run until stopped; a command that ends belongs in a Job (lesson 17).
+
+38
+00:02:57,200 --> 00:03:04,365
+Give the toolbox something that keeps running (here sleep), so the team can kubectl exec into it:
+
+39
+00:03:04,900 --> 00:03:12,450
+A container runs as long as its main process; a Deployment restarts anything that ends, even successfully.
+
+40
+00:03:14,200 --> 00:03:20,212
+The backend Pods run fine, but every request to the backend Service fails.
+
+41
+00:03:20,212 --> 00:03:21,025
+Set it up:
+
+42
+00:03:21,567 --> 00:03:25,274
+Which object decides where a Service sends traffic?
+
+43
+00:03:25,274 --> 00:03:26,220
+Its selector:
+
+44
+00:03:26,220 --> 00:03:30,436
+every ready Pod whose labels match it becomes an endpoint.
+
+45
+00:03:31,000 --> 00:03:33,613
+A typo in the Service selector.
+
+46
+00:03:33,613 --> 00:03:39,935
+Labels match exactly; one character is enough to match nothing (lesson 07).
+
+47
+00:03:43,200 --> 00:03:47,322
+"Service does not work" → first kubectl describe service:
+
+48
+00:03:47,322 --> 00:03:48,696
+an empty Endpoints:
+
+49
+00:03:48,696 --> 00:03:53,468
+points at the selector or at Pods that are not ready (problem 06).
+
+50
+00:03:53,468 --> 00:03:59,615
+kubectl get pods -l SELECTOR with the Service's exact selector shows what it matches.
+
+51
+00:04:01,367 --> 00:04:08,075
+After someone "added health checks", the backend Pods run but the Service sends them nothing.
+
+52
+00:04:08,075 --> 00:04:08,796
+Set it up:
+
+53
+00:04:09,333 --> 00:04:10,210
+statuscode:
+
+54
+00:04:10,210 --> 00:04:10,529
+404:
+
+55
+00:04:10,529 --> 00:04:17,547
+the kubelet reached the application (so the port is right), but the path does not exist.
+
+56
+00:04:17,547 --> 00:04:23,368
+Which path does the probe ask, and which paths does the application have?
+
+57
+00:04:23,933 --> 00:04:29,637
+The readiness probe checks /ready, a path the application does not have.
+
+58
+00:04:29,637 --> 00:04:35,658
+Every check gets 404, so the Pods never become ready and receive no traffic.
+
+59
+00:04:38,900 --> 00:04:42,629
+Running + 0/1 READY = a readiness problem:
+
+60
+00:04:42,629 --> 00:04:45,204
+the Unhealthy event says why.
+
+61
+00:04:46,967 --> 00:04:50,933
+The backend's configuration moved into a ConfigMap.
+
+62
+00:04:50,933 --> 00:04:53,421
+Since then its Pod never starts.
+
+63
+00:04:53,967 --> 00:04:59,216
+The ConfigMap exists, but the key the Deployment asks for does not.
+
+64
+00:04:59,216 --> 00:05:01,096
+Which keys does it have?
+
+65
+00:05:01,633 --> 00:05:05,967
+The Deployment refers to a ConfigMap key that does not exist.
+
+66
+00:05:05,967 --> 00:05:13,428
+A missing key (or ConfigMap) blocks the container from starting, unless the reference is marked optional:
+
+67
+00:05:13,428 --> 00:05:13,783
+true.
+
+68
+00:05:15,533 --> 00:05:18,063
+Point the reference at the real key:
+
+69
+00:05:18,600 --> 00:05:30,843
+CreateContainerConfigError = a ConfigMap, Secret or key the Pod needs is missing:
+
+70
+00:05:30,843 --> 00:05:34,924
+the event names it exactly.
+
+71
+00:05:36,667 --> 00:05:42,417
+The database password was put into a Secret, and the backend was told to read it.
+
+72
+00:05:42,417 --> 00:05:44,191
+The backend never starts.
+
+73
+00:05:44,733 --> 00:05:47,579
+Which Secrets exist in the namespace?
+
+74
+00:05:47,579 --> 00:05:51,963
+(Listing Secrets shows their names, never their values.).
+
+75
+00:05:52,500 --> 00:05:57,253
+The Deployment references a Secret name that does not exist in its namespace,
+
+76
+00:05:57,253 --> 00:06:00,709
+so the kubelet cannot build the container's environment.
+
+77
+00:06:03,967 --> 00:06:12,322
+secret "X" not found = a wrong name or the wrong namespace; couldn't find key = a wrong key (problem 07).
+
+78
+00:06:12,322 --> 00:06:20,121
+kubectl get secrets -n NS lists names safely; never print a Secret's values while troubleshooting.
+
+79
+00:06:21,867 --> 00:06:26,153
+A Pod that writes data to a volume never starts.
+
+80
+00:06:26,153 --> 00:06:27,046
+Set it up:
+
+81
+00:06:27,600 --> 00:06:30,714
+Which StorageClasses does the cluster have?
+
+82
+00:06:31,267 --> 00:06:35,126
+The PVC names a StorageClass that does not exist here,
+
+83
+00:06:35,126 --> 00:06:40,271
+so no provisioner creates a volume; the Pod waits for the claim forever.
+
+84
+00:06:40,271 --> 00:06:42,487
+(Other causes of a Pending PVC:
+
+85
+00:06:42,487 --> 00:06:49,276
+no default StorageClass, or a class with WaitForFirstConsumer that waits until a Pod uses it.).
+
+86
+00:06:51,033 --> 00:06:59,008
+A PVC's storageClassName cannot be changed, so recreate the claim without it (the default class is used):
+
+87
+00:06:59,567 --> 00:07:02,179
+A Pod Pending because of a volume:
+
+88
+00:07:02,179 --> 00:07:04,714
+look at the PVC, then its events.
+
+89
+00:07:04,714 --> 00:07:12,396
+kubectl get storageclass shows what this cluster can provision; class names differ between clusters.
+
+90
+00:07:14,133 --> 00:07:18,971
+The shop's website should answer on shop.local through the Ingress.
+
+91
+00:07:18,971 --> 00:07:24,243
+The web Pod runs, the Service exists, but the site answers with an error.
+
+92
+00:07:24,800 --> 00:07:31,503
+The rule sends / to a Service called frontend, and Kubernetes says it does not exist.
+
+93
+00:07:31,503 --> 00:07:33,159
+Which Services exist?
+
+94
+00:07:33,700 --> 00:07:41,799
+The Ingress points at a Service name (frontend) that does not exist in its namespace; the Service is called web.
+
+95
+00:07:45,033 --> 00:07:47,629
+Ingress problems are a chain:
+
+96
+00:07:47,629 --> 00:07:52,998
+controller → rule (host, path) → Service → endpoints → Pods.
+
+97
+00:07:54,733 --> 00:07:59,130
+Version 3.0.0 of the backend was released this afternoon.
+
+98
+00:07:59,130 --> 00:08:03,603
+The deploy step has been "waiting for rollout" ever since.
+
+99
+00:08:04,167 --> 00:08:10,223
+The rolling update started one Pod with the new version, and that Pod cannot pull its image.
+
+100
+00:08:10,223 --> 00:08:15,159
+The Deployment waits for it to become ready before replacing more old Pods,
+
+101
+00:08:15,159 --> 00:08:17,463
+so the three old Pods keep serving:
+
+102
+00:08:17,463 --> 00:08:20,491
+no outage, just a rollout that never finishes.
+
+103
+00:08:21,033 --> 00:08:24,668
+The release references an image that was never built.
+
+104
+00:08:24,668 --> 00:08:31,663
+The rolling update protects the users (old Pods stay), but the rollout stays stuck until someone acts.
+
+105
+00:08:33,400 --> 00:08:39,439
+Go back to the last working version (lesson 09), then deal with the release:
+
+106
+00:08:39,000 --> 00:08:46,934
+A stuck rollout = a new Pod that never becomes ready; look at the new Pods, not the old ones.
+
+107
+00:08:48,700 --> 00:08:52,655
+The nightly import Pod stops in the middle of its work.
+
+108
+00:08:52,655 --> 00:08:54,885
+Its logs end without any error.
+
+109
+00:08:55,433 --> 00:08:57,598
+How did the container end?
+
+110
+00:08:58,133 --> 00:09:02,795
+The import needs about 100 MiB but is limited to 48 MiB.
+
+111
+00:09:02,795 --> 00:09:06,291
+A memory limit is a hard wall (lesson 15):
+
+112
+00:09:06,291 --> 00:09:10,953
+crossing it kills the process, it does not slow it down.
+
+113
+00:09:12,700 --> 00:09:19,720
+Give the job the memory it needs (a Pod's resources cannot be changed in place, so recreate it):
+
+114
+00:09:20,267 --> 00:09:29,291
+OOMKilled / exit code 137 / logs that just stop = the memory limit, not a bug in the logs.
+
+115
+00:09:31,033 --> 00:09:35,992
+The reporting team's Pod, in its own namespace, must call the backend.
+
+116
+00:09:35,992 --> 00:09:45,413
+"It works from the backend's namespace but not from ours." Set up the backend in trouble-13 and a client namespace trouble-13-client:
+
+117
+00:09:45,967 --> 00:09:54,821
+A short Service name is completed with the caller's namespace (the search line of the Pod's /etc/resolv.conf):
+
+118
+00:09:55,367 --> 00:09:59,931
+The client uses the short name backend from another namespace.
+
+119
+00:09:59,931 --> 00:10:05,011
+Short names only work inside the Service's own namespace (lesson 10).
+
+120
+00:10:06,767 --> 00:10:12,362
+Use the Service's name with its namespace (backend.trouble-13),
+
+121
+00:10:12,362 --> 00:10:17,336
+or the full name (backend.trouble-13.svc.cluster.local):
+
+122
+00:10:17,900 --> 00:10:25,805
+bad address / Name or service not known = DNS; first prove DNS works with kubernetes.default,
+
+123
+00:10:25,805 --> 00:10:27,505
+then check the name.
+
+124
+00:10:29,267 --> 00:10:31,663
+Security locked the backend down:
+
+125
+00:10:31,663 --> 00:10:33,987
+"only the frontend may call it".
+
+126
+00:10:33,987 --> 00:10:36,891
+Now the frontend cannot reach it either.
+
+127
+00:10:37,433 --> 00:10:44,853
+backend-deny-all blocks all incoming traffic; backend-allow-frontend should open it for the frontend.
+
+128
+00:10:44,853 --> 00:10:46,029
+Policies add up:
+
+129
+00:10:46,029 --> 00:10:49,188
+traffic is allowed if any policy allows it.
+
+130
+00:10:49,733 --> 00:10:57,185
+The allow rule selects the frontend by a label it does not have, so only backend-deny-all takes effect:
+
+131
+00:10:57,185 --> 00:11:00,658
+every caller, the frontend included, is dropped.
+
+132
+00:11:03,900 --> 00:11:08,240
+A timeout to a Service with endpoints = traffic dropped:
+
+133
+00:11:08,240 --> 00:11:10,099
+suspect a NetworkPolicy.

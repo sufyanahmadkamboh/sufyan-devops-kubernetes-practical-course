@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Project image: Kubernetes Practical Course</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:627px;overflow:hidden}
+  body{background:radial-gradient(800px 500px at 100% 0%,rgba(50,108,229,.32),transparent 60%),#0b1420;font-family:Inter,"Segoe UI",sans-serif;color:#f1f6fc;position:relative}
+  .g{position:absolute;inset:0;background-image:linear-gradient(rgba(156,195,240,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(156,195,240,.06) 1px,transparent 1px);background-size:44px 44px}
+  .k{position:absolute;left:56px;top:50px;font-size:24px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#8ec9ff}
+  h1{position:absolute;left:56px;top:92px;width:700px;font-size:62px;line-height:1.05;font-weight:900;letter-spacing:-1.5px}
+  .s{position:absolute;left:56px;top:262px;width:680px;font-size:25px;color:#a9bbd2;line-height:1.4}
+  .tiles{position:absolute;left:56px;bottom:52px;display:flex;gap:16px}
+  .t{background:#13233a;border:2px solid #284468;border-top:7px solid var(--c);border-radius:16px;padding:12px 18px;width:160px}
+  .t b{display:block;font-size:38px;font-weight:900;color:var(--c)}.t span{font-size:17px;color:#a9bbd2;font-weight:600}
+  .term{position:absolute;right:48px;top:96px;width:370px;background:#0a0f18;border:2px solid #284468;border-radius:16px;padding:18px 20px;font:700 16px/1.75 "JetBrains Mono",Consolas,monospace}
+  .c{color:#8ec9ff}.bad{color:#ff8a8a}.ok{color:#4cc286}.d{color:#c9d6e6}
+</style>
+</head>
+<body>
+<div class="g"></div>
+<div class="k">Free hands-on course</div>
+<h1>Kubernetes, from zero to practical</h1>
+<div class="s">29 lessons on Minikube, 13 labs, 14 broken clusters to fix and a production-style capstone. Every command tested.</div>
+<div class="term">
+  <div class="c">$ kubectl set image deploy/backend backend=…:1.0.1</div>
+  <div class="bad">backend-59789c64fb-mxrsc  0/1  ErrImagePull</div>
+  <div class="d">old Pods keep serving (maxUnavailable: 0)</div>
+  <div class="c">$ kubectl rollout undo deployment/backend</div>
+  <div class="ok">deployment "backend" successfully rolled out</div>
+  <div class="c">$ kubectl auth can-i delete pods --as developer</div>
+  <div class="bad">no</div>
+</div>
+<div class="tiles">
+  <div class="t" style="--c:#1d91e6"><b>29</b><span>lessons</span></div>
+  <div class="t" style="--c:#ff6b6b"><b>14</b><span>broken clusters</span></div>
+  <div class="t" style="--c:#4cc286"><b>__BLOCKS__</b><span>blocks tested</span></div>
+  <div class="t" style="--c:#b48cff"><b>__VIDEOS__</b><span>videos</span></div>
+</div>
+<script>window.__ready = true;</script>
+</body>
+</html>
