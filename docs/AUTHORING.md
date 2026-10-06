@@ -37,7 +37,7 @@ The headings are fixed, in this order:
 ## Key Takeaways               3–6 bullets, ending with "Real-world use:" (where this is used in a DevOps job)
 ## Cleanup                     delete what the lesson created (mark it 🧹)
 
-Next: [NN · Topic](../NN-topic/README.md)
+Next: [NN · Topic] → ../NN-topic/README.md
 ```
 
 The troubleshooting mindset (every Troubleshoot It section and lab follows it):
