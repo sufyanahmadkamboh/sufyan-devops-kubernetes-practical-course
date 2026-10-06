@@ -1,0 +1,62 @@
+# Traffic rules (lesson 22): nothing may reach a Pod of the namespace unless a policy allows it.
+#   ingress controller → frontend:8080 → backend:8080 → db:5432 ← backup job
+# The frontend can never reach the database directly.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: learning-app
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-from-ingress
+  namespace: learning-app
+spec:
+  podSelector:
+    matchLabels: {tier: frontend}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - {protocol: TCP, port: 8080}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-from-frontend
+  namespace: learning-app
+spec:
+  podSelector:
+    matchLabels: {tier: backend}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {tier: frontend}
+      ports:
+        - {protocol: TCP, port: 8080}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-from-backend
+  namespace: learning-app
+spec:
+  podSelector:
+    matchLabels: {tier: database}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {tier: backend}
+        - podSelector:
+            matchLabels: {tier: backup}
+      ports:
+        - {protocol: TCP, port: 5432}

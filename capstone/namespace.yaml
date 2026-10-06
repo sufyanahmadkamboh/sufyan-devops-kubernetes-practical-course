@@ -1,0 +1,7 @@
+# Everything of the capstone lives in one namespace: deleting it removes the whole application.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: learning-app
+  labels:
+    app.kubernetes.io/part-of: learning-app

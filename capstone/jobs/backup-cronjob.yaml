@@ -1,0 +1,59 @@
+# Every night at 02:00 a Job dumps the database to the db-backups volume and keeps the 7 newest dumps.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  namespace: learning-app
+  labels:
+    app.kubernetes.io/part-of: learning-app
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            tier: backup
+            app.kubernetes.io/part-of: learning-app
+        spec:
+          serviceAccountName: backup
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: postgres:18-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  file=/backup/app-$(date +%Y%m%d-%H%M%S).sql
+                  PGPASSWORD=$(cat /run/secrets/db/password) pg_dump -h db -U "$DB_USER" -d "$DB_NAME" > "$file"
+                  echo "wrote $file ($(wc -c < "$file") bytes)"
+                  ls -1t /backup/app-*.sql | tail -n +8 | xargs -r rm --
+              env:
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef: {name: db-credentials, key: username}
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef: {name: db-credentials, key: database}
+              volumeMounts:
+                - {name: backups, mountPath: /backup}
+                - {name: credentials, mountPath: /run/secrets/db, readOnly: true}
+              resources:
+                requests: {cpu: 50m, memory: 32Mi}
+                limits: {cpu: 250m, memory: 128Mi}
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: db-backups
+            - name: credentials
+              secret:
+                secretName: db-credentials
+                items:
+                  - {key: password, path: password}

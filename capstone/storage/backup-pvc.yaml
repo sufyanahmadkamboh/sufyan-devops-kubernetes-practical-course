@@ -1,0 +1,14 @@
+# Where the backup CronJob writes its dumps, separate from the database's own volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-backups
+  namespace: learning-app
+  labels:
+    app.kubernetes.io/part-of: learning-app
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 1Gi

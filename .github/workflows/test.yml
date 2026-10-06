@@ -1,0 +1,96 @@
+# Proves that every command of the course still works:
+#   static    links, manifests valid for Kubernetes 1.37 (kubeconform), Helm chart lint, ShellCheck, Go vet
+#   lessons   every lesson, lab, challenge and the capstone, in course order, on a fresh Minikube cluster with the
+#             course's settings, in four parallel groups
+name: test-lessons
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"     # weekly: catch changes in new image patch versions
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MINIKUBE_VERSION: v1.39.0
+  KUBECTL_VERSION: v1.37.1
+  HELM_VERSION: v4.3.0
+  KUBECONFORM_VERSION: v0.8.0
+
+jobs:
+  static:
+    name: Static checks (links, manifests, chart, scripts, code)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Tools (kubeconform, Helm)
+        run: |
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz kubeconform
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz --strip-components=1 linux-amd64/helm
+          sudo mv kubeconform helm /usr/local/bin/
+      - name: Relative links in every Markdown file
+        run: python3 tests/check_links.py
+      - name: Manifests are valid Kubernetes 1.37 objects
+        run: kubeconform -strict -kubernetes-version 1.37.0 -summary -ignore-filename-pattern 'capstone/helm/' manifests/ capstone/
+      - name: Helm chart (lint, and the rendered objects are valid)
+        run: |
+          helm lint helm/learning-app
+          for values in helm/learning-app/values*.yaml; do
+            helm template learning-app helm/learning-app -f "$values" | kubeconform -strict -kubernetes-version 1.37.0 -summary
+          done
+      - name: Scripts (ShellCheck)
+        run: shellcheck -S style scripts/*.sh tests/*.sh
+      - name: Backend (go vet)
+        working-directory: apps/backend
+        run: docker run --rm -v "$PWD:/src" -w /src golang:1.26-alpine go vet ./...
+
+  lessons:
+    name: Lessons (${{ matrix.group }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [docs-01-10, docs-11-16, docs-17-24, docs-25-29-capstone]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Docker Hub pulls through a mirror (anonymous pulls are rate-limited)
+        run: |
+          echo '{"registry-mirrors": ["https://mirror.gcr.io"]}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+      - name: Minikube, kubectl, Helm
+        run: |
+          curl -fsSLo minikube "https://github.com/kubernetes/minikube/releases/download/${MINIKUBE_VERSION}/minikube-linux-amd64"
+          curl -fsSLo kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz --strip-components=1 linux-amd64/helm
+          chmod +x minikube kubectl && sudo mv minikube kubectl helm /usr/local/bin/
+          minikube version --short && kubectl version --client && helm version --short
+      - name: The course cluster, with the course's images loaded
+        run: bash tests/ci-preload.sh
+      - name: Run the group, in course order
+        run: |
+          set -euo pipefail
+          docs() { for n in "$@"; do ls docs/"$n"-*/README.md; done; }
+          case "${{ matrix.group }}" in
+            docs-01-10) files="$(docs 01 02 03 04 05 06 07 08 09 10) $(ls labs/0[1-4]-*/README.md) $(ls challenges/beginner/*.md)" ;;
+            docs-11-16) files="$(docs 11 12 13 14 15 16) $(ls labs/0[5-8]-*/README.md) $(ls challenges/intermediate/0[1-4]-*.md)" ;;
+            docs-17-24) files="$(docs 17 18 19 20 21 22 23 24) $(ls labs/09-*/README.md labs/1[01]-*/README.md) $(ls challenges/intermediate/0[5-8]-*.md)" ;;
+            docs-25-29-capstone) files="$(docs 25 26 27 28 29) $(ls labs/12-troubleshooting/[0-9][0-9]-*.md labs/13-*/README.md) $(ls challenges/troubleshooting/*.md)" ;;
+          esac
+          bash tests/run.sh --update --record tests/out $files
+      - name: Keep the real outputs and recordings
+        if: always()
+        run: git diff > tests/out/outputs.patch || true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: run-${{ matrix.group }}
+          path: tests/out/
+          retention-days: 14

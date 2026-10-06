@@ -1,0 +1,27 @@
+# The "developer" may look at the application and read its logs, but not change or delete anything (lesson 24).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-viewer
+  namespace: learning-app
+rules:
+  - apiGroups: [""]
+    resources: [pods, pods/log, services, configmaps, persistentvolumeclaims, events]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, replicasets, statefulsets]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-views-app
+  namespace: learning-app
+subjects:
+  - kind: User
+    name: developer
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: app-viewer
+  apiGroup: rbac.authorization.k8s.io

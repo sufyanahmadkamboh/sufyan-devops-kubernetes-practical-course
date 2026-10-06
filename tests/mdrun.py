@@ -194,6 +194,30 @@ ENV = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "DOCKER_CLI_HINTS": "false
        "COMPOSE_PROGRESS": "plain", "COMPOSE_ANSI": "never", "BUILDKIT_PROGRESS": "plain", "AWS_PAGER": ""}
 
 
+def run_tree(cmd: list[str], timeout: int) -> tuple[str, int]:
+    """subprocess.run with a timeout that also stops the command's children: killing only bash would leave a child
+    (a kubectl waiting forever) holding the output pipe open, and the run would hang instead of timing out."""
+    flags = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if WINDOWS else {"start_new_session": True}
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                         errors="replace", env=ENV, **flags)
+    try:
+        out, _ = p.communicate(timeout=timeout)
+        return out, p.returncode
+    except subprocess.TimeoutExpired:
+        if WINDOWS:
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(p.pid)], capture_output=True)
+        else:
+            import signal
+            os.killpg(p.pid, signal.SIGKILL)
+        try:
+            out, _ = p.communicate(timeout=5)
+        except subprocess.TimeoutExpired as e:
+            # Git Bash children are not a Windows process tree: a grandchild can survive taskkill and keep the pipe
+            # open. Stop waiting for it; the run goes on.
+            out = e.output.decode(errors="replace") if isinstance(e.output, bytes) else (e.output or "")
+        return (out or "") + f"\n[timed out after {timeout}s]", 124
+
+
 def execute(code: str, cwd: str, timeout: int, vm: str | None) -> tuple[str, int, str]:
     """Run code with bash -e, on this computer (in cwd) or inside a VM. Returns (output, status, new cwd)."""
     if vm:
@@ -210,13 +234,7 @@ def execute(code: str, cwd: str, timeout: int, vm: str | None) -> tuple[str, int
     # the trap records the final directory even when the block fails (a "fail" block keeps the learner's cd)
     save = shlex.quote(f"pwd > {shlex.quote(Path(state.name).as_posix())}")
     script = "\n".join(["set -e", f"trap {save} EXIT", f"cd {shlex.quote(cwd)}", code, ""])
-    try:
-        p = subprocess.run(shell() + ["-c", script], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                           encoding="utf-8", errors="replace", timeout=timeout, env=ENV)
-        out, rc = p.stdout, p.returncode
-    except subprocess.TimeoutExpired as e:
-        partial = e.stdout.decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
-        out, rc = partial + f"\n[timed out after {timeout}s]", 124
+    out, rc = run_tree(shell() + ["-c", script], timeout)
     new_cwd = Path(state.name).read_text(encoding="utf-8").strip() or cwd
     os.unlink(state.name)
     if WINDOWS and re.match(r"^/[a-z]/", new_cwd):

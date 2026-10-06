@@ -1,0 +1,49 @@
+# The frontend's configuration and page. Nginx runs as an unprivileged user on a read-only file system, so every
+# path it writes is under /tmp (an emptyDir). /api/ is proxied to the backend Service by its DNS name.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: learning-app
+  labels:
+    app.kubernetes.io/part-of: learning-app
+data:
+  nginx.conf: |
+    worker_processes 1;
+    pid /tmp/nginx.pid;
+    error_log stderr warn;
+    events { worker_connections 256; }
+    http {
+      include /etc/nginx/mime.types;
+      access_log /dev/stdout;
+      server_tokens off;
+      client_body_temp_path /tmp/client_temp;
+      proxy_temp_path /tmp/proxy_temp;
+      fastcgi_temp_path /tmp/fastcgi_temp;
+      uwsgi_temp_path /tmp/uwsgi_temp;
+      scgi_temp_path /tmp/scgi_temp;
+      server {
+        listen 8080;
+        root /usr/share/nginx/html;
+        location = /healthz { access_log off; return 200 "ok\n"; }
+        location = /api/info { proxy_pass http://backend:8080/; }
+        location /api/ { proxy_pass http://backend:8080; }
+        location / { try_files $uri /index.html; }
+      }
+    }
+  index.html: |
+    <!doctype html>
+    <html lang="en">
+    <head><meta charset="utf-8"><title>Learning App</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem;color:#1f2937}
+    h1{color:#326ce5} code{background:#eef2ff;padding:.1rem .3rem;border-radius:4px}</style></head>
+    <body>
+      <h1>Learning App</h1>
+      <p>Backend: <code id="info">…</code></p>
+      <p>Visits stored in PostgreSQL: <code id="visits">…</code></p>
+      <script>
+        fetch("/api/info").then(r => r.json()).then(j => info.textContent = j.message + " · v" + j.version + " · " + j.pod);
+        fetch("/api/visits").then(r => r.json()).then(j => visits.textContent = j.visits ?? j.error);
+      </script>
+    </body>
+    </html>

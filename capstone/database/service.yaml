@@ -1,0 +1,18 @@
+# Headless Service: gives the StatefulSet's Pod a stable DNS name (db-0.db.learning-app.svc.cluster.local),
+# and "db" resolves to the database Pod for the backend.
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: learning-app
+  labels:
+    app.kubernetes.io/name: db
+    app.kubernetes.io/part-of: learning-app
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
