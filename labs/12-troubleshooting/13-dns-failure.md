@@ -62,8 +62,6 @@ kubectl run resolv -n trouble-13-client --rm -i --quiet --restart=Never --image=
 
 ```text
 search trouble-13-client.svc.cluster.local svc.cluster.local cluster.local
-warning: couldn't attach to pod/resolv, falling back to streaming logs: unable to upgrade connection: container resolv not found in pod resolv_trouble-13-client
-search trouble-13-client.svc.cluster.local svc.cluster.local cluster.local
 ```
 
 From `trouble-13-client`, `backend` means `backend.trouble-13-client.svc.cluster.local`, which does not exist. The
