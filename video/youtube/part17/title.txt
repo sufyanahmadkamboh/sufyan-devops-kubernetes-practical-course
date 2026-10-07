@@ -1,1 +1,0 @@
-Troubleshooting lab · 14 broken clusters | Kubernetes Practical Course

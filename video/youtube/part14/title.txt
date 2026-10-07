@@ -1,1 +1,0 @@
-Level 14 · Scaling and autoscaling | Kubernetes Practical Course

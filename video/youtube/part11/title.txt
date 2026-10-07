@@ -1,1 +1,0 @@
-Level 11 · Stateful applications | Kubernetes Practical Course
